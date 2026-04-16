@@ -1,3 +1,55 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Fundly Design Tokens — CSS Variables
+   ─────────────────────────────────────
+   All team members should use these variables via Tailwind classes.
+   To change the app's look, just update the values here.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Brand / Primary ────────────────────────────────────────────────────── */
+  --color-primary-50:  #f0f9ff;   /* lightest bg tint            */
+  --color-primary-100: #e0f2fe;   /* hover bg / borders          */
+  --color-primary-200: #bae6fd;   /* light borders               */
+  --color-primary-300: #7dd3fc;   /* light text accents           */
+  --color-primary-400: #38bdf8;   /* links / active states        */
+  --color-primary-500: #0ea5e9;   /* main brand color             */
+  --color-primary-600: #0284c7;   /* buttons / CTA                */
+  --color-primary-700: #0369a1;   /* button hover / gradients     */
+
+  /* ── Success / Emerald ──────────────────────────────────────────── */
+  --color-success-50:  #ecfdf5;
+  --color-success-200: #a7f3d0;
+  --color-success-500: #10b981;
+  --color-success-600: #059669;
+  --color-success-700: #047857;
+
+  /* ── Error / Red ────────────────────────────────────────────────── */
+  --color-error-50:  #fef2f2;
+  --color-error-200: #fecaca;
+  --color-error-300: #fca5a5;
+  --color-error-400: #f87171;
+  --color-error-500: #ef4444;
+  --color-error-700: #b91c1c;
+
+  /* ── Warning / Amber ────────────────────────────────────────────── */
+  --color-warning-50:  #fffbeb;
+  --color-warning-200: #fde68a;
+  --color-warning-500: #f59e0b;
+
+  /* ── Info / Violet ──────────────────────────────────────────────── */
+  --color-info-50:  #f5f3ff;
+  --color-info-200: #ddd6fe;
+  --color-info-500: #8b5cf6;
+
+  /* ── Neutrals / Surface ─────────────────────────────────────────── */
+  --color-bg:      #f9fafb;       /* page background (gray-50)    */
+  --color-surface: #ffffff;       /* card background              */
+  --color-border:  #e5e7eb;       /* default border (gray-200)    */
+  --color-text:    #111827;       /* heading text (gray-900)      */
+  --color-text-secondary: #6b7280; /* body text (gray-500)        */
+  --color-text-muted: #9ca3af;    /* placeholder / muted (gray-400) */
+}
