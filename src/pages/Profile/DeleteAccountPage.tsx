@@ -5,7 +5,7 @@ import authApi from "../../api/authApi";
 /* ─── Theme (matches ProfilePage / MyDonationsPage) ─── */
 const PRIMARY       = "#00A3FF";
 const PRIMARY_DARK  = "#0077B6";
-const PRIMARY_LIGHT = "#e6f7ff";
+//const PRIMARY_LIGHT = "#e6f7ff";
 const DANGER        = "#ef4444";
 const DANGER_DARK   = "#b91c1c";
 const DANGER_LIGHT  = "#fef2f2";
