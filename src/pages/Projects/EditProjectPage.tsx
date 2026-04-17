@@ -4,9 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { z } from 'zod'
 import { projectsApi } from '../../api/projectsApi'
 import type { Category, Tag } from '../../types/project.types'
-
-// backend url to fix image path problem
-const BACKEND = 'http://localhost:8000'
+import { BACKEND_URL as BACKEND } from '../../config'
 
 const formSchema = z.object({
   title: z.string().min(5, 'title must be at least 5 characters'),
