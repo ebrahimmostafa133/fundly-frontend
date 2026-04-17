@@ -4,6 +4,12 @@ import RegisterPage from '../pages/Auth/RegisterPage';
 import ActivatePage from '../pages/Auth/ActivatePage';
 import ForgotPasswordPage from '../pages/Auth/ForgotPasswordPage';
 import ResetPasswordPage from '../pages/Auth/ResetPasswordPage';
+import ProfilePage from '../pages/Profile/ProfilePage';
+import EditProfilePage from "../pages/Profile/EditProfilePage";
+import ChangePasswordPage from '../pages/Profile/ChangePasswordPage';
+import MyDonationsPage from '../pages/Profile/MyDonationsPage';
+import DeleteAccountPage from '../pages/Profile/DeleteAccountPage';
+
 
 // ─── Redirect to /login if no token found ───────────────────────────────────
 
@@ -33,8 +39,16 @@ export default function AppRoutes() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password/:uidb64/:token" element={<ResetPasswordPage />} />
 
+
       {/* ── Home — redirects to login if not authenticated ── */}
       <Route path="/" element={<HomeRedirect />} />
+
+
+      <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/profile/edit" element={<EditProfilePage />} />
+      <Route path="/profile/change-password" element={<ChangePasswordPage />} />
+      <Route path="/profile/my-donations" element={<MyDonationsPage />} />
+      <Route path="/profile/delete-account" element={<DeleteAccountPage />} />
 
       {/* ── 404 ── */}
       <Route
