@@ -1,11 +1,15 @@
-import { Routes, Route, Navigate } from "react-router-dom";
 
-import LoginPage from "../pages/Auth/LoginPage";
-import RegisterPage from "../pages/Auth/RegisterPage";
-import ActivatePage from "../pages/Auth/ActivatePage";
-import ForgotPasswordPage from "../pages/Auth/ForgotPasswordPage";
-import ResetPasswordPage from "../pages/Auth/ResetPasswordPage";
-
+import { Routes, Route, Navigate } from 'react-router-dom';
+import LoginPage from '../pages/Auth/LoginPage';
+import RegisterPage from '../pages/Auth/RegisterPage';
+import ActivatePage from '../pages/Auth/ActivatePage';
+import ForgotPasswordPage from '../pages/Auth/ForgotPasswordPage';
+import ResetPasswordPage from '../pages/Auth/ResetPasswordPage';
+import ProfilePage from '../pages/Profile/ProfilePage';
+import EditProfilePage from "../pages/Profile/EditProfilePage";
+import ChangePasswordPage from '../pages/Profile/ChangePasswordPage';
+import MyDonationsPage from '../pages/Profile/MyDonationsPage';
+import DeleteAccountPage from '../pages/Profile/DeleteAccountPage';
 import ProjectsListPage from "../pages/Projects/ProjectsListPage";
 import CreateProjectPage from "../pages/Projects/CreateProjectPage";
 import EditProjectPage from "../pages/Projects/EditProjectPage";
@@ -43,6 +47,12 @@ export default function AppRoutes() {
         }
       />
 
+      <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/profile/edit" element={<EditProfilePage />} />
+      <Route path="/profile/change-password" element={<ChangePasswordPage />} />
+      <Route path="/profile/my-donations" element={<MyDonationsPage />} />
+      <Route path="/profile/delete-account" element={<DeleteAccountPage />} />
+      
       <Route path="/projects" element={<ProjectsListPage />} />
       <Route
         path="/projects/create"
