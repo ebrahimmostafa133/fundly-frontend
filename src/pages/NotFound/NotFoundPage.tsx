@@ -374,7 +374,7 @@ export default function NotFoundPage() {
             <div className="ticker-inner">
               {[
                 "💰 Keep donating",
-                "🤝 Every dirham counts",
+                "🤝 Every EGP counts",
                 "💝 Change starts with you",
                 "🏦 Fund a project today",
                 "💸 Make an impact",
@@ -382,7 +382,7 @@ export default function NotFoundPage() {
                 "💳 Secure donations",
                 "💵 Support a cause",
                 "💰 Keep donating",
-                "🤝 Every dirham counts",
+                "🤝 Every EGP counts",
                 "💝 Change starts with you",
                 "🏦 Fund a project today",
                 "💸 Make an impact",

@@ -31,43 +31,37 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    setApiError(null);
+  setApiError(null);
+  try {
+    const response = await axiosInstance.post('auth/login/', {
+      email: data.email,
+      password: data.password,
+    });
 
-    try {
-      console.log("LOGIN REQUEST:", data);
+    const { tokens, user } = response.data;
 
-      // IMPORTANT: backend expects ONLY email + password
-      const response = await axiosInstance.post('auth/login/', {
-        email: data.email,
-        password: data.password,
-      });
-
-      console.log("LOGIN RESPONSE:", response.data);
-
-      const { tokens, user } = response.data;
-
-      if (!tokens?.access) {
-        throw new Error("No access token received");
-      }
-
-      // Save tokens
-      localStorage.setItem('access', tokens.access);
-      localStorage.setItem('refresh_token', tokens.refresh);
-      localStorage.setItem('user', JSON.stringify(user));
-
-      // Redirect after success
-      navigate('/profile'); // or '/'
-    } catch (err: any) {
-      console.error("LOGIN ERROR:", err?.response?.data || err);
-
-      setApiError(
-        err?.response?.data?.error ||
-        err?.response?.data?.detail ||
-        err?.message ||
-        "Login failed. Please try again."
-      );
+    if (!tokens?.access) {
+      throw new Error("No access token received");
     }
-  };
+
+    localStorage.setItem('access', tokens.access);
+    localStorage.setItem('refresh', tokens.refresh);
+
+    if (user) {
+      localStorage.setItem('user', JSON.stringify(user));
+    }
+
+    navigate('/profile');
+  } catch (err: any) {
+    console.error("LOGIN ERROR:", err?.response?.data || err);
+    setApiError(
+      err?.response?.data?.error ||
+      err?.response?.data?.detail ||
+      err?.message ||
+      "Login failed. Please try again."
+    );
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
