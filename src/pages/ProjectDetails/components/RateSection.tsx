@@ -22,11 +22,21 @@ export default function RateSection({ projectId, onRated }: Props) {
       await ratingsApi.createRating(projectId, value);
       setMsg({ type: "success", text: "Rating submitted!" });
       onRated();
-    } catch {
-      setMsg({
-        type: "error",
-        text: "Could not submit rating. You may have already rated this project.",
-      });
+    } catch (error: any) {
+      let errorText = "Could not submit rating. You may have already rated this project.";
+      if (error.response?.data) {
+        const data = error.response.data;
+        if (typeof data === 'string') {
+          errorText = data;
+        } else if (data.detail) {
+          errorText = data.detail;
+        } else if (data.non_field_errors?.[0]) {
+          errorText = data.non_field_errors[0];
+        } else if (Array.isArray(data) && data[0]) {
+          errorText = data[0];
+        }
+      }
+      setMsg({ type: "error", text: errorText });
     } finally {
       setSubmitting(false);
     }
