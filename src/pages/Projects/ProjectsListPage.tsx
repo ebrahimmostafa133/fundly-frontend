@@ -1,21 +1,19 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useSearchParams } from 'react-router-dom'
 import { projectsApi } from '../../api/projectsApi'
 import ProjectCard from '../../components/shared/ProjectCard'
 import type { Project, Category } from '../../types/project.types'
+import { useProfile } from '../../hooks/useProfile'
 
 export default function ProjectsListPage() {
-  const [params] = useSearchParams()
-  const initialSearch = params.get('search') ?? ''
-  const initialCategory = params.get('category') ?? ''
-
   const [projects, setProjects] = useState<Project[]>([])
   const [cats, setCats] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [err, setErr] = useState('')
-  const [searchText, setSearchText] = useState(initialSearch)
-  const [catFilter, setCatFilter] = useState(initialCategory)
+  const [searchText, setSearchText] = useState('')
+  const [catFilter, setCatFilter] = useState('')
+  const [showMineOnly, setShowMineOnly] = useState(false)
+  const { user } = useProfile()
 
   useEffect(() => {
 
@@ -27,6 +25,7 @@ export default function ProjectsListPage() {
         const res1 = await projectsApi.getProjects({
           search: searchText || undefined,
           category: catFilter || undefined,
+          owner: showMineOnly && user ? user.id : undefined,
         })
         const res2 = await projectsApi.getCategories()
 
@@ -44,7 +43,7 @@ export default function ProjectsListPage() {
     const t = setTimeout(getData, 500)
     return () => clearTimeout(t)
 
-  }, [searchText, catFilter])
+  }, [searchText, catFilter, showMineOnly, user?.id])
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
@@ -87,6 +86,22 @@ export default function ProjectsListPage() {
             </option>
           ))}
         </select>
+        {user && (
+          <div className="flex bg-gray-50 border border-gray-200 rounded-xl overflow-hidden p-1">
+            <button
+              onClick={() => setShowMineOnly(false)}
+              className={`flex-1 px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${!showMineOnly ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setShowMineOnly(true)}
+              className={`flex-1 px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${showMineOnly ? 'bg-primary-500 shadow text-white' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Mine
+            </button>
+          </div>
+        )}
       </div>
 
       {isLoading && (
