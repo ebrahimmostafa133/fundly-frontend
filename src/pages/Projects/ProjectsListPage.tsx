@@ -1,17 +1,21 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { projectsApi } from '../../api/projectsApi'
 import ProjectCard from '../../components/shared/ProjectCard'
 import type { Project, Category } from '../../types/project.types'
 
 export default function ProjectsListPage() {
+  const [params] = useSearchParams()
+  const initialSearch = params.get('search') ?? ''
+  const initialCategory = params.get('category') ?? ''
 
   const [projects, setProjects] = useState<Project[]>([])
   const [cats, setCats] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [err, setErr] = useState('')
-  const [searchText, setSearchText] = useState('')
-  const [catFilter, setCatFilter] = useState('')
+  const [searchText, setSearchText] = useState(initialSearch)
+  const [catFilter, setCatFilter] = useState(initialCategory)
 
   useEffect(() => {
 
@@ -78,7 +82,7 @@ export default function ProjectsListPage() {
         >
           <option value="">All Categories</option>
           {cats.map((cat) => (
-            <option key={cat.id} value={cat.name}>
+            <option key={cat.id} value={cat.slug || cat.name}>
               {cat.name}
             </option>
           ))}

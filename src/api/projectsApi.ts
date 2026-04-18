@@ -9,6 +9,14 @@ export const projectsApi = {
     return axiosInstance.get("/projects/", { params });
   },
 
+  getTopRatedProjects: () => {
+    return axiosInstance.get("/projects/top-rated/");
+  },
+
+  getFeaturedProjects: () => {
+    return axiosInstance.get("/projects/featured/");
+  },
+
   getProject: (id: number) => {
     return axiosInstance.get(`/projects/${id}/`);
   },
