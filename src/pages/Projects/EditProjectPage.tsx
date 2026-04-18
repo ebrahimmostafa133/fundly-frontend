@@ -5,6 +5,8 @@ import { z } from 'zod'
 import { projectsApi } from '../../api/projectsApi'
 import type { Category, Tag } from '../../types/project.types'
 import { BACKEND_URL as BACKEND } from '../../config'
+import ProjectForm from './ProjectForm'
+import ConfirmModal from '../../components/shared/ConfirmModal'
 
 const formSchema = z.object({
   title: z.string().min(5, 'title must be at least 5 characters'),
@@ -27,7 +29,6 @@ type Errors = {
   end_time?: string
 }
 
-// make good format for date
 function fixDate(val: string) {
   if (!val) return ''
   try {
@@ -40,21 +41,24 @@ function fixDate(val: string) {
 }
 
 export default function EditProjectPage() {
-
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-
   const [cats, setCats] = useState<Category[]>([])
   const [allTags, setAllTags] = useState<Tag[]>([])
   const [pickedTags, setPickedTags] = useState<number[]>([])
   const [oldImgs, setOldImgs] = useState<string[]>([])
   const [newImgs, setNewImgs] = useState<File[]>([])
-  const [newPreviews, setNewPreviews] = useState<string[]>([])
+  const [previews, setPreviews] = useState<string[]>([])
   const [fieldErrors, setFieldErrors] = useState<Errors>({})
   const [serverErr, setServerErr] = useState('')
+  const [loading, setLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
   const [pageErr, setPageErr] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [cancelLoading, setCancelLoading] = useState(false)
+  const [cancelErr, setCancelErr] = useState('')
+  const [projectStatus, setProjectStatus] = useState('')
+  const [projectProgress, setProjectProgress] = useState(0)
+  const [showModal, setShowModal] = useState(false)
 
   const [form, setForm] = useState({
     title: '',
@@ -65,9 +69,9 @@ export default function EditProjectPage() {
     end_time: '',
   })
 
+  // load project data
   useEffect(() => {
     if (!id) return
-
     Promise.all([
       projectsApi.getProject(Number(id)),
       projectsApi.getCategories(),
@@ -76,8 +80,10 @@ export default function EditProjectPage() {
       .then(([projRes, catRes, tagRes]) => {
         const p = projRes.data
         setCats(catRes.data)
-        setAllTags(tagRes.data)        
+        setAllTags(tagRes.data)
         setPickedTags(p.tags?.map((t: any) => t.id) ?? [])
+        setProjectStatus(p.status || 'active')
+        setProjectProgress(p.progress || 0)
 
         // fix image urls because django return relative path
         setOldImgs(
@@ -99,7 +105,7 @@ export default function EditProjectPage() {
       .finally(() => setPageLoading(false))
   }, [id])
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+  function handleChange(e: any) {
     setForm({ ...form, [e.target.name]: e.target.value })
     setFieldErrors({ ...fieldErrors, [e.target.name]: undefined })
   }
@@ -112,19 +118,19 @@ export default function EditProjectPage() {
     }
   }
 
-  function handleNewImgs(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files || []).slice(0, 5)
+  function handleImgChange(e: any) {
+    const files = Array.from(e.target.files || []).slice(0, 5) as File[]
     setNewImgs(files)
-    setNewPreviews(files.map((f) => URL.createObjectURL(f)))
+    setPreviews(files.map((f) => URL.createObjectURL(f)))
   }
 
-  function removeNewImg(i: number) {
+  function removeImg(i: number) {
     const updated = newImgs.filter((_, idx) => idx !== i)
     setNewImgs(updated)
-    setNewPreviews(updated.map((f) => URL.createObjectURL(f)))
+    setPreviews(updated.map((f) => URL.createObjectURL(f)))
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: any) {
     e.preventDefault()
     setServerErr('')
 
@@ -153,17 +159,31 @@ export default function EditProjectPage() {
 
       await projectsApi.updateProject(Number(id), fd)
       navigate(`/projects/${id}`)
-
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: unknown } }
-      if (e.response?.data && typeof e.response.data === 'object') {
-        const msgs = Object.values(e.response.data as Record<string, string[]>).flat().join(' ')
+    } catch (err: any) {
+      if (err.response?.data && typeof err.response.data === 'object') {
+        const msgs = Object.values(err.response.data as Record<string, string[]>).flat().join(' ')
         setServerErr(msgs || 'somthing went wrong, try again')
       } else {
         setServerErr('somthing went wrong, try again')
       }
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function confirmCancel() {
+    setCancelLoading(true)
+    setCancelErr('')
+    try {
+      await projectsApi.cancelProject(Number(id))
+      setProjectStatus('cancelled')
+      setShowModal(false)
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || 'fail to cancel project'
+      setCancelErr(msg)
+      setShowModal(false)
+    } finally {
+      setCancelLoading(false)
     }
   }
 
@@ -188,213 +208,78 @@ export default function EditProjectPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Edit <span className="text-primary-500">Project</span></h1>
-        <p className="text-gray-500 text-sm mt-1">update the info of your project</p>
+
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Edit <span className="text-primary-500">Project</span></h1>
+          <p className="text-gray-500 text-sm mt-1">update the info of your project</p>
+        </div>
+        {projectStatus === 'cancelled' && (
+          <span className="px-3 py-1 bg-error-100 text-error-700 text-xs font-bold rounded-full uppercase tracking-wider">
+            Cancelled
+          </span>
+        )}
       </div>
 
-      {serverErr && (
-        <div className="bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded-xl mb-6 text-sm">
-          {serverErr}
+      <ProjectForm
+        form={form}
+        fieldErrors={fieldErrors}
+        cats={cats}
+        allTags={allTags}
+        pickedTags={pickedTags}
+        previews={previews}
+        oldImgs={oldImgs}
+        loading={loading || projectStatus === 'cancelled'}
+        submitText="Save Changes"
+        serverErr={serverErr}
+        onChangeField={handleChange}
+        onTagClick={handleTagClick}
+        onImgChange={handleImgChange}
+        onRemoveImg={removeImg}
+        onSubmit={handleSubmit}
+        onBack={() => navigate(`/projects/${id}`)}
+      />
+
+      {/* danger zone - only show if project is still active */}
+      {projectStatus !== 'cancelled' ? (
+        <div className="mt-12 pt-8 border-t border-error-200">
+          <h2 className="text-xl font-bold text-error-600 mb-2">Danger Zone</h2>
+          <p className="text-sm text-gray-500 mb-4">
+            if you cancel this project it will not accept donations anymore. projects can only be cancelled if less than 25% funded.
+          </p>
+          {cancelErr && <p className="text-error-500 text-sm mb-3">{cancelErr}</p>}
+          <button
+            type="button"
+            onClick={() => setShowModal(true)}
+            disabled={projectProgress >= 25}
+            className="px-4 py-2 bg-error-50 hover:bg-error-100 text-error-600 font-semibold rounded-xl border border-error-200 transition-colors disabled:opacity-50"
+          >
+            Cancel This Project
+          </button>
+          {projectProgress >= 25 && (
+            <p className="text-xs text-error-500 mt-2">cannot cancel: project reached {projectProgress}% (limit is 25%)</p>
+          )}
+        </div>
+      ) : (
+        <div className="mt-12 pt-8 border-t border-gray-200">
+          <div className="bg-gray-100 text-gray-600 px-4 py-3 rounded-xl text-sm font-medium text-center">
+            this project is cancelled and cant be edited anymore
+          </div>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-6">
+      <ConfirmModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onConfirm={confirmCancel}
+        loading={cancelLoading}
+        title="Cancel Project"
+        message="are you sure you want to cancel?"
+        confirmText="yes, cancel it"
+        cancelText="no, go back"
+        isDanger={true}
+      />
 
-        <div>
-          <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-1">
-            Project Title <span className="text-error-500">*</span>
-          </label>
-          <input
-            id="title"
-            name="title"
-            type="text"
-            value={form.title}
-            onChange={handleChange}
-            className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 ${
-              fieldErrors.title ? 'border-error-400 bg-error-50' : 'border-gray-200 bg-gray-50'
-            }`}
-          />
-          {fieldErrors.title && <p className="text-error-500 text-xs mt-1">{fieldErrors.title}</p>}
-        </div>
-
-        <div>
-          <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-1">
-            Description <span className="text-error-500">*</span>
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            rows={4}
-            value={form.description}
-            onChange={handleChange}
-            className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 resize-none ${
-              fieldErrors.description ? 'border-error-400 bg-error-50' : 'border-gray-200 bg-gray-50'
-            }`}
-          />
-          {fieldErrors.description && <p className="text-error-500 text-xs mt-1">{fieldErrors.description}</p>}
-        </div>
-
-        <div>
-          <label htmlFor="category" className="block text-sm font-semibold text-gray-700 mb-1">
-            Category <span className="text-error-500">*</span>
-          </label>
-          <select
-            id="category"
-            name="category"
-            value={form.category}
-            onChange={handleChange}
-            className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 ${
-              fieldErrors.category ? 'border-error-400 bg-error-50' : 'border-gray-200 bg-gray-50'
-            }`}
-          >
-            <option value="">select category</option>
-            {cats.map((cat) => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
-          </select>
-          {fieldErrors.category && <p className="text-error-500 text-xs mt-1">{fieldErrors.category}</p>}
-        </div>
-
-        <div>
-          <label htmlFor="target" className="block text-sm font-semibold text-gray-700 mb-1">
-            Funding Target (EGP) <span className="text-error-500">*</span>
-          </label>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">EGP</span>
-            <input
-              id="target"
-              name="target"
-              type="number"
-              min="1"
-              value={form.target}
-              onChange={handleChange}
-              className={`w-full border rounded-xl pl-14 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 ${
-                fieldErrors.target ? 'border-error-400 bg-error-50' : 'border-gray-200 bg-gray-50'
-              }`}
-            />
-          </div>
-          {fieldErrors.target && <p className="text-error-500 text-xs mt-1">{fieldErrors.target}</p>}
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="start_time" className="block text-sm font-semibold text-gray-700 mb-1">
-              Start Date <span className="text-error-500">*</span>
-            </label>
-            <input
-              id="start_time"
-              name="start_time"
-              type="datetime-local"
-              value={form.start_time}
-              onChange={handleChange}
-              className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 ${
-                fieldErrors.start_time ? 'border-error-400 bg-error-50' : 'border-gray-200 bg-gray-50'
-              }`}
-            />
-            {fieldErrors.start_time && <p className="text-error-500 text-xs mt-1">{fieldErrors.start_time}</p>}
-          </div>
-          <div>
-            <label htmlFor="end_time" className="block text-sm font-semibold text-gray-700 mb-1">
-              End Date <span className="text-error-500">*</span>
-            </label>
-            <input
-              id="end_time"
-              name="end_time"
-              type="datetime-local"
-              value={form.end_time}
-              onChange={handleChange}
-              className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 ${
-                fieldErrors.end_time ? 'border-error-400 bg-error-50' : 'border-gray-200 bg-gray-50'
-              }`}
-            />
-            {fieldErrors.end_time && <p className="text-error-500 text-xs mt-1">{fieldErrors.end_time}</p>}
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Tags <span className="font-normal text-gray-400">(optional)</span>
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {allTags.map((tag) => (
-              <button
-                key={tag.id}
-                type="button"
-                onClick={() => handleTagClick(tag.id)}
-                className={`px-3 py-1 text-sm rounded-full border transition-colors ${
-                  pickedTags.includes(tag.id)
-                    ? 'bg-primary-500 text-white border-primary-500'
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300'
-                }`}
-              >
-                {tag.name}
-              </button>
-            ))}
-            {allTags.length === 0 && <p className="text-gray-400 text-sm">no tags yet</p>}
-          </div>
-        </div>
-
-        {oldImgs.length > 0 && (
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Current Images</label>
-            <div className="flex flex-wrap gap-3">
-              {oldImgs.map((src, i) => (
-                <div key={i} className="w-20 h-20 rounded-xl overflow-hidden border border-gray-200">
-                  <img src={src} alt="" className="w-full h-full object-cover" />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">
-            New Images <span className="font-normal text-gray-400">(this will replace old ones)</span>
-          </label>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleNewImgs}
-            className="w-full text-sm border border-gray-200 rounded-xl px-4 py-2.5 bg-gray-50 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:bg-primary-50 file:text-primary-700"
-          />
-          {newPreviews.length > 0 && (
-            <div className="flex flex-wrap gap-3 mt-3">
-              {newPreviews.map((src, i) => (
-                <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200">
-                  <img src={src} alt="" className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => removeNewImg(i)}
-                    className="absolute top-0.5 right-0.5 bg-error-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                  >
-                    
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-3 pt-2">
-          <button
-            type="button"
-            onClick={() => navigate(`/projects/${id}`)}
-            className="px-6 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 bg-primary-500 hover:bg-primary-600 text-white font-semibold py-2.5 rounded-xl transition-colors disabled:opacity-50"
-          >
-            {loading ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
-
-      </form>
     </div>
   )
 }
