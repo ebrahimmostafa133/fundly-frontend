@@ -13,10 +13,11 @@ import DeleteAccountPage from '../pages/Profile/DeleteAccountPage';
 import ProjectsListPage from "../pages/Projects/ProjectsListPage";
 import CreateProjectPage from "../pages/Projects/CreateProjectPage";
 import EditProjectPage from "../pages/Projects/EditProjectPage";
+import ProjectDetailsPage from "../pages/ProjectDetails/ProjectDetailsPage";
 import PageNotFound from "../pages/NotFound/NotFoundPage";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("access");
   if (!token) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
@@ -47,13 +48,12 @@ export default function AppRoutes() {
           </RequireAuth>
         }
       />
-     
+
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/profile/edit" element={<EditProfilePage />} />
       <Route path="/profile/change-password" element={<ChangePasswordPage />} />
       <Route path="/profile/my-donations" element={<MyDonationsPage />} />
       <Route path="/profile/delete-account" element={<DeleteAccountPage />} />
-      
 
       <Route path="/projects" element={<ProjectsListPage />} />
       <Route
@@ -72,6 +72,7 @@ export default function AppRoutes() {
           </RequireAuth>
         }
       />
+      <Route path="/projects/:id" element={<ProjectDetailsPage />} />
 
       {/* 404 */}
       <Route path="*" element={<PageNotFound />} />
