@@ -51,7 +51,7 @@ export default function LoginPage() {
       localStorage.setItem('user', JSON.stringify(user));
     }
 
-    navigate('/profile');
+    navigate('/');
   } catch (err: any) {
     console.error("LOGIN ERROR:", err?.response?.data || err);
     setApiError(
