@@ -120,6 +120,8 @@ export default function LoginPage() {
               )}
             </div>
 
+
+
             {/* PASSWORD */}
             <div className="relative">
               <Lock className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
@@ -134,7 +136,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-gray-500"
+                className="absolute right-3 top-4 text-gray-500"
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
@@ -145,6 +147,14 @@ export default function LoginPage() {
                 {errors.password.message}
               </p>
             )}
+
+            <Link
+              to="/forgot-password"
+              className="text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors"
+              id="forgot-password-link"
+            >
+              Forgot password?
+            </Link>
 
             {/* SUBMIT */}
             <button

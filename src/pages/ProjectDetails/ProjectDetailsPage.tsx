@@ -85,7 +85,6 @@ export default function ProjectDetailsPage() {
 
       if (donationsRes.status === "fulfilled") {
         const dd = donationsRes.value;
-        console.log(donationsRes)
         setTotalFunded(dd.progress.total_donations ?? 0);
       }
     } catch {
@@ -102,8 +101,6 @@ export default function ProjectDetailsPage() {
   const progress = project.target > 0
     ? Math.round((totalFunded / project.target) * 100)
     : 0;
-
-    console.log(totalFunded)
 
   return (
     <div className="min-h-screen bg-[#F7FAFC]">

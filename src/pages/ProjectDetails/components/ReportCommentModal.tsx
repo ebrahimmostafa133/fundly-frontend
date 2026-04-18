@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TbFlag, TbX } from "react-icons/tb";
-import reportsApi from "../../../api/reportsApi";
+import reportsApi, { type ReasonChoice } from "../../../api/reportsApi";
 
 interface Props {
   commentId: number;
@@ -10,11 +10,30 @@ interface Props {
 export default function ReportCommentModal({ commentId, onClose }: Props) {
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [reasons, setReasons] = useState<ReasonChoice[]>([]);
   const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    fetchReasons();
+  }, []);
+
+  async function fetchReasons() {
+    setLoading(true);
+    try {
+      const data = await reportsApi.getReasonChoices();
+      setReasons(data);
+    } catch (error) {
+      console.error(error);
+      setMsg("Failed to load reason options.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleSubmit() {
     if (!reason.trim()) {
-      setMsg("Please provide a reason.");
+      setMsg("Please select a reason.");
       return;
     }
 
@@ -24,8 +43,13 @@ export default function ReportCommentModal({ commentId, onClose }: Props) {
       await reportsApi.createReport({ comment: commentId, reason });
       setMsg("Report submitted. Thank you.");
       setTimeout(onClose, 1200);
-    } catch {
-      setMsg("Failed to submit report.");
+    } catch (error: any) {
+      // Extract error message from backend
+      let errorText = "Failed to submit report.";
+      if (error.response?.data) {
+        errorText = error.response.data;
+      }
+      setMsg(errorText);
     } finally {
       setSubmitting(false);
     }
@@ -47,21 +71,30 @@ export default function ReportCommentModal({ commentId, onClose }: Props) {
         </button>
       </div>
 
-      {/* Reason */}
-      <textarea
-        rows={2}
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-        placeholder="Why is this comment inappropriate?"
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-error-300 bg-white resize-none"
-      />
+      {/* Reason Dropdown */}
+      {loading ? (
+        <div className="text-xs text-gray-500 py-2">Loading reasons...</div>
+      ) : (
+        <select
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-error-300 bg-white"
+        >
+          <option value="">Select a reason</option>
+          {reasons.map((r) => (
+            <option key={r.value} value={r.value}>
+              {r.label}
+            </option>
+          ))}
+        </select>
+      )}
 
       {/* Actions */}
       <div className="flex items-center justify-between mt-2">
         {msg && <span className="text-xs text-gray-500">{msg}</span>}
         <button
           onClick={handleSubmit}
-          disabled={submitting}
+          disabled={submitting || loading}
           className="ml-auto px-3 py-1.5 bg-error-500 hover:bg-error-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50"
         >
           {submitting ? "Sending..." : "Report"}

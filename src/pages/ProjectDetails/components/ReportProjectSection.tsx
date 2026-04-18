@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TbFlag, TbAlertTriangle } from "react-icons/tb";
-import reportsApi from "../../../api/reportsApi";
+import reportsApi, { type ReasonChoice } from "../../../api/reportsApi";
 
 interface Props {
   projectId: number;
@@ -10,11 +10,32 @@ export default function ReportProjectSection({ projectId }: Props) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [reasons, setReasons] = useState<ReasonChoice[]>([]);
   const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    if (open && reasons.length === 0) {
+      fetchReasons();
+    }
+  }, [open]);
+
+  async function fetchReasons() {
+    setLoading(true);
+    try {
+      const data = await reportsApi.getReasonChoices();
+      setReasons(data);
+    } catch (error) {
+      console.error(error);
+      setMsg({ type: "error", text: "Failed to load reason options." });
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleReport() {
     if (!reason.trim()) {
-      setMsg({ type: "error", text: "Please provide a reason." });
+      setMsg({ type: "error", text: "Please select a reason." });
       return;
     }
 
@@ -26,8 +47,13 @@ export default function ReportProjectSection({ projectId }: Props) {
       setMsg({ type: "success", text: "Report submitted. Thank you." });
       setReason("");
       setOpen(false);
-    } catch {
-      setMsg({ type: "error", text: "Failed to submit report." });
+    } catch(error: any) {
+      console.log(error)
+      let errorText = "Failed to submit report.";
+      if (error.response?.data) {
+        errorText = error.response.data;
+      }
+      setMsg({ type: "error", text: errorText });
     } finally {
       setSubmitting(false);
     }
@@ -45,13 +71,22 @@ export default function ReportProjectSection({ projectId }: Props) {
 
       {open && (
         <div className="mt-3 animate-slideIn">
-          <textarea
-            rows={3}
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Describe why this project is inappropriate..."
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-error-300 bg-gray-50 resize-none"
-          />
+          {loading ? (
+            <div className="px-4 py-2 text-sm text-gray-500">Loading reasons...</div>
+          ) : (
+            <select
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-error-300 bg-white"
+            >
+              <option value="">Select a reason</option>
+              {reasons.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          )}
           <div className="flex gap-2 mt-2">
             <button
               onClick={() => { setOpen(false); setReason(""); }}
@@ -61,7 +96,7 @@ export default function ReportProjectSection({ projectId }: Props) {
             </button>
             <button
               onClick={handleReport}
-              disabled={submitting}
+              disabled={submitting || loading}
               className="px-4 py-2 bg-error-500 hover:bg-error-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50 flex items-center gap-1.5"
             >
               <TbAlertTriangle size={14} />
