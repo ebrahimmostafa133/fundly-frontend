@@ -42,21 +42,30 @@ export const useProfile = (): UseProfileReturn => {
   }, []);
 
   const updateProfile = useCallback(async (data: FormData): Promise<boolean> => {
-    try {
-      setUpdating(true);
-      setError(null);
+  try {
+    setUpdating(true);
+    setError(null);
 
-      const updated = await authApi.updateProfile(data);
-      setUser(updated);
-
-      return true;
-    } catch {
-      setError("Failed to update profile.");
-      return false;
-    } finally {
-      setUpdating(false);
+    // log what we're sending
+    console.log("SENDING FORMDATA:");
+    for (const [key, val] of data.entries()) {
+      console.log(" ", key, "→", val);
     }
-  }, []);
+
+    const updated = await authApi.updateProfile(data);
+    console.log("PATCH RESPONSE:", updated);
+    console.log("PROFILE PICTURE IN RESPONSE:", updated.profile_picture);
+    setUser(updated);
+
+    return true;
+  } catch (err) {
+    console.error("UPDATE ERROR:", err);
+    setError("Failed to update profile.");
+    return false;
+  } finally {
+    setUpdating(false);
+  }
+}, []);
 
   useEffect(() => {
     fetchProfile();

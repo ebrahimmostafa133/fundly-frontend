@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-//import donationsApi from "../../api/donationsApi";
+import donationsApi from "../../api/donationsApi";
 import type { Donation } from "../../types/donation";
 
 const PRIMARY       = "#00A3FF";
@@ -29,9 +29,7 @@ const STYLES = `
     0%   { opacity: 1; transform: translateY(0) scale(1); }
     100% { opacity: 0; transform: translateY(-34px) scale(0.4); }
   }
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
+  @keyframes spin { to { transform: rotate(360deg); } }
   @keyframes shimmerSlide {
     0%   { background-position: -200% center; }
     100% { background-position:  200% center; }
@@ -40,14 +38,6 @@ const STYLES = `
     0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
     60%  { transform: scale(1.3) rotate(8deg);  opacity: 1; }
     100% { transform: scale(1)   rotate(0deg);  opacity: 1; }
-  }
-  @keyframes ripple {
-    0%   { transform: scale(0); opacity: 0.5; }
-    100% { transform: scale(28); opacity: 0; }
-  }
-  @keyframes avatarPulse {
-    0%, 100% { transform: scale(1); }
-    50%       { transform: scale(1.06); }
   }
 
   .donations-page * { box-sizing: border-box; }
@@ -70,32 +60,22 @@ const STYLES = `
     transform: translateY(-7px) scale(1.018);
     box-shadow: 0 22px 52px rgba(0,0,0,0.14);
   }
-
-  .env-body {
-    position: absolute;
-    inset: 0;
-    border-radius: 18px;
-  }
-
+  .env-body { position: absolute; inset: 0; border-radius: 18px; }
   .env-tri-bl {
-    position: absolute;
-    bottom: 0; left: 0;
+    position: absolute; bottom: 0; left: 0;
     width: 50%; height: 52%;
     clip-path: polygon(0 100%, 100% 100%, 0 0);
     z-index: 2;
   }
   .env-tri-br {
-    position: absolute;
-    bottom: 0; right: 0;
+    position: absolute; bottom: 0; right: 0;
     width: 50%; height: 52%;
     clip-path: polygon(100% 100%, 0 100%, 100% 0);
     z-index: 2;
   }
-
   .env-lid {
     position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 52%;
+    top: 0; left: 0; right: 0; height: 52%;
     clip-path: polygon(0 0, 100% 0, 50% 100%);
     border-radius: 18px 18px 0 0;
     transform-origin: top center;
@@ -104,13 +84,9 @@ const STYLES = `
     z-index: 10;
     backface-visibility: hidden;
   }
-  .env-card:hover .env-lid {
-    transform: rotateX(-155deg);
-  }
-
+  .env-card:hover .env-lid { transform: rotateX(-155deg); }
   .env-seal {
-    position: absolute;
-    top: 50%; left: 50%;
+    position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     z-index: 11;
     transition: opacity 0.28s ease, transform 0.5s cubic-bezier(.34,1.5,.64,1);
@@ -119,38 +95,23 @@ const STYLES = `
     opacity: 0;
     transform: translate(-50%, -50%) scale(0) rotate(200deg);
   }
-
   .env-inner {
-    position: absolute;
-    inset: 0;
-    border-radius: 18px;
-    z-index: 5;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
+    position: absolute; inset: 0; border-radius: 18px; z-index: 5;
+    display: flex; flex-direction: column; justify-content: flex-end;
     padding: 18px 20px 16px;
-    opacity: 0;
-    transform: translateY(12px);
+    opacity: 0; transform: translateY(12px);
     transition: opacity 0.32s ease 0.18s, transform 0.32s ease 0.18s;
   }
-  .env-card:hover .env-inner {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  .env-card:hover .env-inner { opacity: 1; transform: translateY(0); }
 
   .filter-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    border-radius: 10px;
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 10px;
     border: 1.5px solid #e5e7eb;
-    background: #fff;
-    color: #6b7280;
-    font-weight: 500;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.18s ease;
+    background: #fff; color: #6b7280;
+    font-weight: 500; font-size: 13px;
+    cursor: pointer; transition: all 0.18s ease;
+    font-family: inherit;
   }
   .filter-btn.active {
     border-color: ${PRIMARY};
@@ -158,10 +119,7 @@ const STYLES = `
     color: ${PRIMARY_DARK};
     font-weight: 700;
   }
-  .filter-btn:hover:not(.active) {
-    border-color: #d1d5db;
-    background: #f9fafb;
-  }
+  .filter-btn:hover:not(.active) { border-color: #d1d5db; background: #f9fafb; }
 `;
 
 /* ── Animated counter ── */
@@ -184,7 +142,7 @@ function useCountUp(target: number, ms = 1100, run = false) {
 export default function MyDonationsPage() {
   const [donations, setDonations]   = useState<Donation[]>([]);
   const [loading, setLoading]       = useState(true);
-  //const [error, setError]           = useState<string | null>(null);
+  const [error, setError]           = useState<string | null>(null);
   const [filter, setFilter]         = useState<"all" | "recent" | "top">("all");
   const [statsReady, setStatsReady] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
@@ -211,13 +169,12 @@ export default function MyDonationsPage() {
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
-//-----------------------
-  /* ── FIXED FETCH ── */
-  /*useEffect(() => {
+
+  /* fetch from backend */
+  useEffect(() => {
     donationsApi
       .getMyDonations()
       .then((r) => {
-        // Handle both paginated { results: [] } and plain array responses
         const data: Donation[] = Array.isArray(r)
           ? r
           : Array.isArray(r?.results)
@@ -230,81 +187,13 @@ export default function MyDonationsPage() {
         if (status === 401 || status === 403) {
           setError("You need to be logged in to view your donations.");
         } else {
-          setError("Couldn't load your donations. Please try again!");
+          setError("Couldn't load your donations. Please try again.");
         }
       })
       .finally(() => setLoading(false));
-  }, []);*/
-
-  /* ── DUMMY DATA — delete this block and uncomment real fetch when backend is ready ── */
-  useEffect(() => {
-    const DUMMY: Donation[] = [
-      {
-        id: 1,
-        amount: "5000",
-        created_at: "2024-11-15T10:30:00Z",
-        project: { id: 101, title: "Clean Water for Rural Egypt" },
-      },
-      {
-        id: 2,
-        amount: "1200",
-        created_at: "2024-12-03T14:22:00Z",
-        project: { id: 102, title: "Solar Panels for Schools" },
-      },
-      {
-        id: 3,
-        amount: "750",
-        created_at: "2025-01-08T09:11:00Z",
-        project: { id: 103, title: "Food Bank Support Initiative" },
-      },
-      {
-        id: 4,
-        amount: "300",
-        created_at: "2025-02-20T16:45:00Z",
-        project: { id: 104, title: "Books for Every Child" },
-      },
-      {
-        id: 5,
-        amount: "2500",
-        created_at: "2025-03-01T08:00:00Z",
-        project: { id: 105, title: "Medical Aid for Sinai Villages" },
-      },
-      {
-        id: 6,
-        amount: "450",
-        created_at: "2025-03-18T11:30:00Z",
-        project: { id: 106, title: "Women Empowerment Fund" },
-      },
-    ];
-
-    setTimeout(() => {
-      setDonations(DUMMY);
-      setLoading(false);
-    }, 800);
-
-  // ── REAL FETCH — uncomment when backend is ready ──
-  // donationsApi
-  //   .getMyDonations()
-  //   .then((r) => {
-  //     const data: Donation[] = Array.isArray(r)
-  //       ? r
-  //       : Array.isArray(r?.results)
-  //       ? r.results
-  //       : [];
-  //     setDonations(data);
-  //   })
-  //   .catch((err: unknown) => {
-  //     const status = (err as { response?: { status?: number } })?.response?.status;
-  //     if (status === 401 || status === 403) {
-  //       setError("You need to be logged in to view your donations.");
-  //     } else {
-  //       setError("Couldn't load your donations. Please try again!");
-  //     }
-  //   })
-  //   .finally(() => setLoading(false));
   }, []);
-//---------------
-  const total = donations.reduce((s, d) => s + parseFloat(d.amount || "0"), 0);
+
+  const total        = donations.reduce((s, d) => s + parseFloat(d.amount || "0"), 0);
   const projectCount = new Set(donations.map((d) => d.project?.id)).size;
 
   const sorted = [...donations].sort((a, b) => {
@@ -316,7 +205,7 @@ export default function MyDonationsPage() {
   });
 
   if (loading) return <Loader />;
-  //if (error)   return <ErrState msg={error} />;
+  if (error)   return <ErrState msg={error} />;
 
   return (
     <div
@@ -330,88 +219,46 @@ export default function MyDonationsPage() {
           <Link
             to="/profile"
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              color: PRIMARY,
-              fontWeight: 600,
-              fontSize: 13,
-              textDecoration: "none",
-              marginBottom: 20,
+              display: "inline-flex", alignItems: "center", gap: 6,
+              color: PRIMARY, fontWeight: 600, fontSize: 13,
+              textDecoration: "none", marginBottom: 20,
               transition: "gap 0.18s ease",
             }}
             onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.gap = "10px")}
             onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.gap = "6px")}
           >
-            <span style={{ fontSize: 16, display: "inline-block", transition: "transform 0.18s" }}>←</span>
+            <span style={{ fontSize: 16, display: "inline-block" }}>←</span>
             Back to Profile
           </Link>
         </div>
 
-        {/* hero */}
         <HeroBanner donationCount={donations.length} total={total} />
 
-        {/* stats */}
         <div
           ref={statsRef}
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 14,
-            marginBottom: 28,
+            display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 14, marginBottom: 28,
             animation: "fadeUp 0.38s ease 0.08s both",
           }}
         >
-          <StatCard
-            emoji="💸"
-            label="Total Donated"
-            num={Math.round(total)}
-            prefix="EGP "
-            color="#00A3FF"
-            run={statsReady}
-          />
-          <StatCard
-            emoji="📬"
-            label="Donations Made"
-            num={donations.length}
-            color="#7c3aed"
-            run={statsReady}
-          />
-          <StatCard
-            emoji="🌱"
-            label="Projects Backed"
-            num={projectCount}
-            color="#059669"
-            run={statsReady}
-          />
+          <StatCard emoji="💸" label="Total Donated"   num={Math.round(total)} prefix="EGP " color="#00A3FF" run={statsReady} />
+          <StatCard emoji="📬" label="Donations Made"  num={donations.length}  color="#7c3aed"  run={statsReady} />
+          <StatCard emoji="🌱" label="Projects Backed" num={projectCount}      color="#059669"  run={statsReady} />
         </div>
 
-        {/* filter */}
         <FilterRow active={filter} set={setFilter} />
 
-        {/* cards grid */}
         {sorted.length === 0 ? (
           <EmptyState />
         ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-              gap: 18,
-            }}
-          >
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 18 }}>
             {sorted.map((d, i) => (
-              <EnvelopeCard
-                key={d.id}
-                donation={d}
-                index={i}
-                palette={PALETTES[i % PALETTES.length]}
-              />
+              <EnvelopeCard key={d.id} donation={d} index={i} palette={PALETTES[i % PALETTES.length]} />
             ))}
           </div>
         )}
 
-        {/* footer */}
         {sorted.length > 0 && <Thanks count={donations.length} />}
       </div>
     </div>
@@ -423,45 +270,23 @@ function HeroBanner({ donationCount, total }: { donationCount: number; total: nu
   return (
     <div
       style={{
-        borderRadius: 22,
-        padding: "24px 28px",
-        marginBottom: 28,
+        borderRadius: 22, padding: "24px 28px", marginBottom: 28,
         background: `linear-gradient(135deg, ${PRIMARY_DARK} 0%, ${PRIMARY} 65%, #4FD1FF 100%)`,
-        position: "relative",
-        overflow: "hidden",
+        position: "relative", overflow: "hidden",
         animation: "fadeUp 0.32s ease both",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
       }}
     >
-      {/* decorative bubbles */}
-      {[
-        { s: 140, x: -36, y: -36 },
-        { s: 70,  x: "72%", y: -18 },
-        { s: 50,  x: "88%", y: "55%" },
-      ].map((b, i) => (
-        <div
-          key={i}
-          style={{
-            position: "absolute",
-            borderRadius: "50%",
-            width: b.s, height: b.s,
-            left: b.x, top: b.y,
-            background: "#fff",
-            opacity: 0.08,
-            pointerEvents: "none",
-          }}
-        />
+      {[{ s: 140, x: -36, y: -36 }, { s: 70, x: "72%", y: -18 }, { s: 50, x: "88%", y: "55%" }].map((b, i) => (
+        <div key={i} style={{
+          position: "absolute", borderRadius: "50%",
+          width: b.s, height: b.s, left: b.x, top: b.y,
+          background: "#fff", opacity: 0.08, pointerEvents: "none",
+        }} />
       ))}
-
       <div style={{ position: "relative", zIndex: 1 }}>
-        <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13, fontWeight: 600, margin: "0 0 4px" }}>
-          Your Impact
-        </p>
-        <h1 style={{ color: "#fff", fontSize: 28, fontWeight: 800, margin: "0 0 6px", lineHeight: 1.1 }}>
-          My Donations
-        </h1>
+        <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13, fontWeight: 600, margin: "0 0 4px" }}>Your Impact</p>
+        <h1 style={{ color: "#fff", fontSize: 28, fontWeight: 800, margin: "0 0 6px", lineHeight: 1.1 }}>My Donations</h1>
         {donationCount > 0 ? (
           <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 13, margin: 0, fontWeight: 500 }}>
             {donationCount} {donationCount === 1 ? "donation" : "donations"} · EGP {Math.round(total).toLocaleString()} total 💙
@@ -472,16 +297,7 @@ function HeroBanner({ donationCount, total }: { donationCount: number; total: nu
           </p>
         )}
       </div>
-
-      <div
-        style={{
-          fontSize: 56,
-          lineHeight: 1,
-          animation: "floatBob 3s ease-in-out infinite",
-          position: "relative",
-          zIndex: 1,
-        }}
-      >
+      <div style={{ fontSize: 56, lineHeight: 1, animation: "floatBob 3s ease-in-out infinite", position: "relative", zIndex: 1 }}>
         💌
       </div>
     </div>
@@ -489,45 +305,21 @@ function HeroBanner({ donationCount, total }: { donationCount: number; total: nu
 }
 
 /* ════════════════════ STAT CARD ════════════════════ */
-function StatCard({
-  emoji,
-  label,
-  num,
-  prefix = "",
-  color,
-  run,
-}: {
-  emoji: string;
-  label: string;
-  num: number;
-  prefix?: string;
-  color: string;
-  run: boolean;
+function StatCard({ emoji, label, num, prefix = "", color, run }: {
+  emoji: string; label: string; num: number; prefix?: string; color: string; run: boolean;
 }) {
   const count = useCountUp(num, 1100, run);
   return (
-    <div
-      style={{
-        background: "#fff",
-        borderRadius: 16,
-        padding: "16px 14px",
-        border: `1.5px solid ${color}28`,
-        boxShadow: `0 4px 20px ${color}14`,
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      {/* shimmer top bar */}
-      <div
-        className="shimmer-bar"
-        style={{
-          position: "absolute",
-          top: 0, left: 0, right: 0,
-          height: 3,
-          background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
-          backgroundSize: "200% 100%",
-        }}
-      />
+    <div style={{
+      background: "#fff", borderRadius: 16, padding: "16px 14px",
+      border: `1.5px solid ${color}28`, boxShadow: `0 4px 20px ${color}14`,
+      position: "relative", overflow: "hidden",
+    }}>
+      <div className="shimmer-bar" style={{
+        position: "absolute", top: 0, left: 0, right: 0, height: 3,
+        background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
+        backgroundSize: "200% 100%",
+      }} />
       <div style={{ fontSize: 22, marginBottom: 6 }}>{emoji}</div>
       <div style={{ fontSize: 20, fontWeight: 800, color, lineHeight: 1, marginBottom: 3 }}>
         {prefix}{count.toLocaleString()}
@@ -540,13 +332,7 @@ function StatCard({
 /* ════════════════════ FILTER ROW ════════════════════ */
 type FilterKey = "all" | "recent" | "top";
 
-function FilterRow({
-  active,
-  set,
-}: {
-  active: FilterKey;
-  set: (k: FilterKey) => void;
-}) {
+function FilterRow({ active, set }: { active: FilterKey; set: (k: FilterKey) => void }) {
   const tabs: { k: FilterKey; label: string; icon: string }[] = [
     { k: "all",    label: "All",         icon: "📋" },
     { k: "recent", label: "Most Recent", icon: "🕐" },
@@ -555,13 +341,8 @@ function FilterRow({
   return (
     <div style={{ display: "flex", gap: 8, marginBottom: 22, animation: "fadeUp 0.4s ease 0.18s both" }}>
       {tabs.map((t) => (
-        <button
-          key={t.k}
-          onClick={() => set(t.k)}
-          className={`filter-btn${active === t.k ? " active" : ""}`}
-        >
-          <span>{t.icon}</span>
-          {t.label}
+        <button key={t.k} onClick={() => set(t.k)} className={`filter-btn${active === t.k ? " active" : ""}`}>
+          <span>{t.icon}</span>{t.label}
         </button>
       ))}
     </div>
@@ -569,28 +350,15 @@ function FilterRow({
 }
 
 /* ════════════════════ ENVELOPE CARD ════════════════════ */
-function EnvelopeCard({
-  donation,
-  index,
-  palette,
-}: {
-  donation: Donation;
-  index: number;
-  palette: (typeof PALETTES)[0];
+function EnvelopeCard({ donation, index, palette }: {
+  donation: Donation; index: number; palette: typeof PALETTES[0];
 }) {
   const ref      = useRef<HTMLDivElement>(null);
   const amount   = parseFloat(donation.amount || "0");
   const title    = donation.project?.title ?? "Unknown Project";
-  const initials = title
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0] ?? "")
-    .join("")
-    .toUpperCase();
-  const date = new Date(donation.created_at).toLocaleDateString("en-US", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
+  const initials = title.split(" ").slice(0, 2).map((w) => w[0] ?? "").join("").toUpperCase();
+  const date     = new Date(donation.created_at).toLocaleDateString("en-US", {
+    day: "2-digit", month: "short", year: "numeric",
   });
 
   function spawnParticles() {
@@ -599,12 +367,8 @@ function EnvelopeCard({
     ["♥", "★", "✦", "◆"].forEach((ch, i) => {
       const s = document.createElement("span");
       Object.assign(s.style, {
-        position: "absolute",
-        left: `${15 + i * 22}%`,
-        bottom: "12px",
-        fontSize: "14px",
-        pointerEvents: "none",
-        zIndex: "99",
+        position: "absolute", left: `${15 + i * 22}%`, bottom: "12px",
+        fontSize: "14px", pointerEvents: "none", zIndex: "99",
         color: palette.body,
         animation: `heartPop 0.8s ease-out ${i * 0.1}s forwards`,
       });
@@ -621,50 +385,36 @@ function EnvelopeCard({
       style={{ animation: `fadeUp 0.4s ease ${0.06 + index * 0.08}s both` }}
       onMouseEnter={spawnParticles}
     >
-      <div className="env-body" style={{ background: palette.body }} />
+      <div className="env-body"   style={{ background: palette.body }} />
       <div className="env-tri-bl" style={{ background: palette.lid, opacity: 0.65 }} />
       <div className="env-tri-br" style={{ background: palette.lid, opacity: 0.8 }} />
       <div className="env-lid"    style={{ background: palette.lid }} />
 
-      {/* wax seal */}
       <div className="env-seal">
-        <div
-          style={{
-            width: 46, height: 46,
-            background: palette.seal,
-            borderRadius: "50%",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            border: `3px solid ${palette.lid}`,
-            clipPath: "polygon(50% 0%,80% 10%,100% 35%,100% 70%,80% 90%,50% 100%,20% 90%,0% 70%,0% 35%,20% 10%)",
-            color: "#fff", fontSize: 12, fontWeight: 800, letterSpacing: "0.5px",
-            animation: "floatBob 2.6s ease-in-out infinite",
-          }}
-        >
+        <div style={{
+          width: 46, height: 46, background: palette.seal, borderRadius: "50%",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          border: `3px solid ${palette.lid}`,
+          clipPath: "polygon(50% 0%,80% 10%,100% 35%,100% 70%,80% 90%,50% 100%,20% 90%,0% 70%,0% 35%,20% 10%)",
+          color: "#fff", fontSize: 12, fontWeight: 800, letterSpacing: "0.5px",
+          animation: "floatBob 2.6s ease-in-out infinite",
+        }}>
           {initials}
         </div>
       </div>
 
-      {/* inner reveal on hover */}
       <div className="env-inner" style={{ background: palette.inside }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <div
-            style={{
-              width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-              background: palette.body,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#fff", fontWeight: 800, fontSize: 12,
-            }}
-          >
+          <div style={{
+            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+            background: palette.body,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "#fff", fontWeight: 800, fontSize: 12,
+          }}>
             {initials}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p
-              style={{
-                margin: 0, fontSize: 13, fontWeight: 700,
-                color: palette.text,
-                whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-              }}
-            >
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: palette.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {title}
             </p>
             <p style={{ margin: 0, fontSize: 11, color: palette.text, opacity: 0.55 }}>{date}</p>
@@ -673,20 +423,13 @@ function EnvelopeCard({
 
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
           <div>
-            <p
-              style={{
-                margin: "0 0 1px", fontSize: 10,
-                color: palette.text, opacity: 0.5,
-                fontWeight: 600, letterSpacing: 1, textTransform: "uppercase",
-              }}
-            >
+            <p style={{ margin: "0 0 1px", fontSize: 10, color: palette.text, opacity: 0.5, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>
               Donated
             </p>
             <p style={{ margin: 0, fontSize: 24, fontWeight: 800, color: palette.text, lineHeight: 1 }}>
               EGP {amount.toLocaleString()}
             </p>
           </div>
-
           <Link
             to={`/projects/${donation.project?.id}`}
             onClick={(e) => e.stopPropagation()}
@@ -695,8 +438,7 @@ function EnvelopeCard({
               background: palette.body, color: "#fff",
               fontSize: 11, fontWeight: 700, textDecoration: "none",
               letterSpacing: "0.3px", whiteSpace: "nowrap",
-              transition: "opacity 0.18s",
-              flexShrink: 0,
+              transition: "opacity 0.18s", flexShrink: 0,
             }}
             onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.opacity = "0.82")}
             onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.opacity = "1")}
@@ -721,14 +463,11 @@ function TierBadge({ amount }: { amount: number }) {
     amount >= 500  ? { label: "💙 Valued Backer",    bg: "#eff6ff", fg: "#1e40af" } :
                      { label: "🌱 Kind Contributor", bg: "#f0fdf4", fg: "#166534" };
   return (
-    <span
-      style={{
-        display: "inline-flex", alignItems: "center", gap: 4,
-        padding: "3px 10px", borderRadius: 100,
-        background: t.bg, color: t.fg,
-        fontSize: 10, fontWeight: 700,
-      }}
-    >
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 4,
+      padding: "3px 10px", borderRadius: 100,
+      background: t.bg, color: t.fg, fontSize: 10, fontWeight: 700,
+    }}>
       {t.label}
     </span>
   );
@@ -738,22 +477,14 @@ function TierBadge({ amount }: { amount: number }) {
 function EmptyState() {
   const [hov, setHov] = useState(false);
   return (
-    <div
-      style={{
-        display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center",
-        padding: "60px 24px", textAlign: "center",
-        background: "#fff", borderRadius: 20,
-        border: "1.5px dashed #d1d5db",
-        animation: "fadeUp 0.4s ease both",
-      }}
-    >
-      <div style={{ fontSize: 64, marginBottom: 16, animation: "floatBob 3s ease-in-out infinite" }}>
-        💌
-      </div>
-      <h3 style={{ fontSize: 20, fontWeight: 800, color: "#1f2937", margin: "0 0 8px" }}>
-        No donations yet
-      </h3>
+    <div style={{
+      display: "flex", flexDirection: "column", alignItems: "center",
+      justifyContent: "center", padding: "60px 24px", textAlign: "center",
+      background: "#fff", borderRadius: 20, border: "1.5px dashed #d1d5db",
+      animation: "fadeUp 0.4s ease both",
+    }}>
+      <div style={{ fontSize: 64, marginBottom: 16, animation: "floatBob 3s ease-in-out infinite" }}>💌</div>
+      <h3 style={{ fontSize: 20, fontWeight: 800, color: "#1f2937", margin: "0 0 8px" }}>No donations yet</h3>
       <p style={{ fontSize: 14, color: "#9ca3af", maxWidth: 280, margin: "0 0 24px" }}>
         Your first envelope is waiting to be sent! Find a project you love and make an impact.
       </p>
@@ -781,18 +512,16 @@ function EmptyState() {
 function Thanks({ count }: { count: number }) {
   const msgs = [
     "The world is better because of people like you 💙",
-    "You've brightened someone's day ",
+    "You've brightened someone's day 🌟",
     "Change starts with one donation — and you've made many ✨",
   ];
   return (
-    <div
-      style={{
-        marginTop: 36, borderRadius: 20, padding: "22px 24px", textAlign: "center",
-        background: `linear-gradient(135deg, ${PRIMARY_LIGHT} 0%, #f0fdf4 100%)`,
-        border: `1.5px solid ${PRIMARY}30`,
-        animation: "fadeUp 0.5s ease 0.25s both",
-      }}
-    >
+    <div style={{
+      marginTop: 36, borderRadius: 20, padding: "22px 24px", textAlign: "center",
+      background: `linear-gradient(135deg, ${PRIMARY_LIGHT} 0%, #f0fdf4 100%)`,
+      border: `1.5px solid ${PRIMARY}30`,
+      animation: "fadeUp 0.5s ease 0.25s both",
+    }}>
       <div style={{ fontSize: 28, marginBottom: 8, animation: "starPop 0.6s ease 0.5s both" }}>🎉</div>
       <p style={{ fontWeight: 700, color: "#374151", fontSize: 14, margin: "0 0 4px" }}>
         {msgs[count % msgs.length]}
@@ -807,21 +536,16 @@ function Thanks({ count }: { count: number }) {
 /* ════════════════════ LOADER ════════════════════ */
 function Loader() {
   return (
-    <div
-      style={{
-        minHeight: "100vh", display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center",
-        gap: 16, background: "#F7FAFC",
-      }}
-    >
-      <div
-        style={{
-          width: 40, height: 40, borderRadius: "50%",
-          border: "3px solid #e5e7eb",
-          borderTopColor: PRIMARY,
-          animation: "spin 0.8s linear infinite",
-        }}
-      />
+    <div style={{
+      minHeight: "100vh", display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      gap: 16, background: "#F7FAFC",
+    }}>
+      <div style={{
+        width: 40, height: 40, borderRadius: "50%",
+        border: "3px solid #e5e7eb", borderTopColor: PRIMARY,
+        animation: "spin 0.8s linear infinite",
+      }} />
       <p style={{ fontSize: 13, fontWeight: 600, color: "#9ca3af", margin: 0 }}>
         Loading your donations…
       </p>
@@ -831,23 +555,19 @@ function Loader() {
 }
 
 /* ════════════════════ ERROR STATE ════════════════════ */
-/*function ErrState({ msg }: { msg: string }) {
+function ErrState({ msg }: { msg: string }) {
   return (
-    <div
-      style={{
-        minHeight: "100vh", display: "flex",
-        alignItems: "center", justifyContent: "center",
-        background: "#F7FAFC",
-      }}
-    >
-      <div
-        style={{
-          color: "#dc2626", background: "#fef2f2",
-          border: "1px solid #fca5a5",
-          padding: "28px 32px", borderRadius: 16,
-          fontSize: 14, textAlign: "center", maxWidth: 340,
-        }}
-      >
+    <div style={{
+      minHeight: "100vh", display: "flex",
+      alignItems: "center", justifyContent: "center",
+      background: "#F7FAFC",
+    }}>
+      <div style={{
+        color: "#dc2626", background: "#fef2f2",
+        border: "1px solid #fca5a5",
+        padding: "28px 32px", borderRadius: 16,
+        fontSize: 14, textAlign: "center", maxWidth: 340,
+      }}>
         <div style={{ fontSize: 36, marginBottom: 12 }}>😕</div>
         <p style={{ fontWeight: 700, color: "#b91c1c", margin: "0 0 8px" }}>Something went wrong</p>
         <p style={{ color: "#6b7280", margin: "0 0 20px", lineHeight: 1.6 }}>{msg}</p>
@@ -865,6 +585,3 @@ function Loader() {
     </div>
   );
 }
-*/
-
-Thanks

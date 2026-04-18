@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useProfile } from "../../hooks/useProfile";
+import donationsApi from "../../api/donationsApi";
 
 const PRIMARY = "#00A3FF";
 const PRIMARY_DARK = "#0077B6";
@@ -29,6 +30,12 @@ const GLOBAL_STYLES = `
 export default function ProfilePage() {
   const { user, loading, error } = useProfile();
 
+  /* ── live donation stats from backend ── */
+  const [totalDonated, setTotalDonated]   = useState<number>(0);
+  const [donationCount, setDonationCount] = useState<number>(0);
+  const [causeCount, setCauseCount]       = useState<number>(0);
+  const [statsLoading, setStatsLoading]   = useState(true);
+
   useEffect(() => {
     if (document.getElementById("profile-global-styles")) return;
     const tag = document.createElement("style");
@@ -38,17 +45,41 @@ export default function ProfilePage() {
     return () => tag.remove();
   }, []);
 
+  useEffect(() => {
+    donationsApi
+      .getMyDonations()
+      .then((r) => {
+        const donations = r.results ?? [];
+        const total     = donations.reduce((s, d) => s + parseFloat(d.amount || "0"), 0);
+        const causes    = new Set(donations.map((d) => d.project?.id)).size;
+        setTotalDonated(Math.round(total));
+        setDonationCount(donations.length);
+        setCauseCount(causes);
+      })
+      .catch(() => {
+        /* silently fail — stats just stay 0 */
+      })
+      .finally(() => setStatsLoading(false));
+  }, []);
+
   if (loading) return <Loader />;
-  if (error) return <ErrorState message={error} />;
-  if (!user) return null;
+  if (error)   return <ErrorState message={error} />;
+  if (!user)   return null;
 
   const initials =
     `${user.first_name?.[0] ?? ""}${user.last_name?.[0] ?? ""}`.toUpperCase();
 
+  /* profile picture URL — prepend base URL if it's a relative path */
+  const avatarUrl = user.profile_picture
+    ? user.profile_picture.startsWith("http")
+      ? user.profile_picture
+      : `${import.meta.env.VITE_API_BASE_URL}${user.profile_picture}`
+    : null;
+
   const stats = [
-    { value: "12",   label: "donations",   bg: "#0077B6", fill: "#003f6b" },
-    { value: "$480", label: "total given", bg: "#0077B6", fill: "#003f6b" },
-    { value: "3",    label: "causes",      bg: "#0077B6", fill: "#003f6b" },
+    { value: statsLoading ? "…" : `${donationCount}`,        label: "donations"   },
+    { value: statsLoading ? "…" : `EGP ${totalDonated.toLocaleString()}`, label: "total given" },
+    { value: statsLoading ? "…" : `${causeCount}`,           label: "causes"      },
   ];
 
   return (
@@ -72,15 +103,27 @@ export default function ProfilePage() {
           style={{ animation: "fadeUp 0.38s ease both" }}
         >
           <div className="flex items-center gap-5 mb-5">
-            <div
-              className="w-16 h-16 rounded-xl flex items-center justify-center text-white font-bold text-xl flex-shrink-0"
-              style={{
-                background: `linear-gradient(135deg, ${PRIMARY}, #4FD1FF)`,
-                animation: "avatarPulse 3.5s ease-in-out infinite",
-              }}
-            >
-              {initials || "?"}
-            </div>
+
+            {/* avatar — photo if available, else initials */}
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={`${user.first_name} ${user.last_name}`}
+                className="w-16 h-16 rounded-xl flex-shrink-0 object-cover"
+                style={{ animation: "avatarPulse 3.5s ease-in-out infinite" }}
+              />
+            ) : (
+              <div
+                className="w-16 h-16 rounded-xl flex items-center justify-center text-white font-bold text-xl flex-shrink-0"
+                style={{
+                  background: `linear-gradient(135deg, ${PRIMARY}, #4FD1FF)`,
+                  animation: "avatarPulse 3.5s ease-in-out infinite",
+                }}
+              >
+                {initials || "?"}
+              </div>
+            )}
+
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-xl font-semibold text-gray-900">
@@ -100,7 +143,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* ── STAT CARDS with ripple-fill hover ── */}
+          {/* STAT CARDS */}
           <div className="grid grid-cols-3 gap-3">
             {stats.map((s) => (
               <StatCard key={s.label} value={s.value} label={s.label} />
@@ -110,10 +153,10 @@ export default function ProfilePage() {
 
         {/* BUTTONS */}
         <div className="flex flex-col gap-3">
-          <RippleButton to="/profile/edit"            label="Edit Profile"     delay={0.08} />
-          <RippleButton to="/profile/change-password" label="Change Password"  delay={0.16} />
-          <RippleButton to="/profile/my-donations"    label="My Donations"     delay={0.24} showHeart />
-          <RippleButton to="/profile/delete-account"  label="Delete Account"   delay={0.32} danger />
+          <RippleButton to="/profile/edit"            label="Edit Profile"    delay={0.08} />
+          <RippleButton to="/profile/change-password" label="Change Password" delay={0.16} />
+          <RippleButton to="/profile/my-donations"    label="My Donations"    delay={0.24} showHeart />
+          <RippleButton to="/profile/delete-account"  label="Delete Account"  delay={0.32} danger />
         </div>
 
       </div>
@@ -122,8 +165,6 @@ export default function ProfilePage() {
 }
 
 /* ===================== STAT CARD ===================== */
-// Tailwind's JIT can't handle dynamic after: values, so we use
-// a real <style> block scoped to a data attribute instead.
 
 let statStyleInjected = false;
 
@@ -214,25 +255,22 @@ function RippleButton({
   const linkRef = useRef<HTMLAnchorElement>(null);
   const [hovered, setHovered] = useState(false);
 
-  const accentColor  = danger ? DANGER      : PRIMARY;
-  const rippleColor  = danger ? "rgba(239,68,68,.22)"   : "rgba(0,163,255,.18)";
-  const hoverBg      = danger ? "#fff5f5"   : "#f0f9ff";
-  const hoverText    = danger ? DANGER_DARK : PRIMARY_DARK;
-  const hoverBorder  = danger ? "#fca5a5"   : "#7dd3fc";
+  const accentColor = danger ? DANGER      : PRIMARY;
+  const rippleColor = danger ? "rgba(239,68,68,.22)"  : "rgba(0,163,255,.18)";
+  const hoverBg     = danger ? "#fff5f5"   : "#f0f9ff";
+  const hoverText   = danger ? DANGER_DARK : PRIMARY_DARK;
+  const hoverBorder = danger ? "#fca5a5"   : "#7dd3fc";
 
   function spawnRipple(e: React.MouseEvent<HTMLAnchorElement>) {
     const el = linkRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const dot = document.createElement("span");
+    const dot  = document.createElement("span");
     Object.assign(dot.style, {
-      position: "absolute",
-      borderRadius: "50%",
-      pointerEvents: "none",
-      width: "10px",
-      height: "10px",
+      position: "absolute", borderRadius: "50%", pointerEvents: "none",
+      width: "10px", height: "10px",
       left: `${e.clientX - rect.left - 5}px`,
-      top: `${e.clientY - rect.top - 5}px`,
+      top:  `${e.clientY - rect.top  - 5}px`,
       background: rippleColor,
       animation: "rippleOut 0.6s ease-out forwards",
       zIndex: "0",
@@ -248,12 +286,10 @@ function RippleButton({
     Object.assign(heart.style, {
       position: "absolute",
       left: `${20 + Math.random() * 40}px`,
-      bottom: "8px",
-      fontSize: "14px",
+      bottom: "8px", fontSize: "14px",
       pointerEvents: "none",
       animation: "heartFloat 0.7s ease-out forwards",
-      zIndex: "10",
-      color: PRIMARY,
+      zIndex: "10", color: PRIMARY,
     });
     heart.textContent = "♥";
     el.appendChild(heart);
@@ -264,64 +300,37 @@ function RippleButton({
     <Link
       ref={linkRef}
       to={to}
-      onMouseEnter={() => {
-        setHovered(true);
-        if (showHeart) spawnHeart();
-      }}
+      onMouseEnter={() => { setHovered(true); if (showHeart) spawnHeart(); }}
       onMouseLeave={() => setHovered(false)}
       onClick={spawnRipple}
       style={{
-        display: "block",
-        position: "relative",
-        overflow: "hidden",
-        padding: "16px 24px",
-        borderRadius: "12px",
+        display: "block", position: "relative", overflow: "hidden",
+        padding: "16px 24px", borderRadius: "12px",
         border: `1px solid ${hovered ? hoverBorder : "#e5e7eb"}`,
         background: hovered ? hoverBg : "#ffffff",
         color: hovered ? hoverText : "#111827",
-        fontWeight: 600,
-        fontSize: "16px",
-        textDecoration: "none",
+        fontWeight: 600, fontSize: "16px", textDecoration: "none",
         transform: hovered ? "translateY(-2px)" : "translateY(0)",
-        transition:
-          "transform 0.22s ease, background 0.22s ease, border-color 0.22s ease, color 0.22s ease, box-shadow 0.22s ease",
-        boxShadow: hovered
-          ? "0 4px 16px rgba(0,0,0,0.08)"
-          : "0 1px 3px rgba(0,0,0,0.04)",
+        transition: "transform 0.22s ease, background 0.22s ease, border-color 0.22s ease, color 0.22s ease, box-shadow 0.22s ease",
+        boxShadow: hovered ? "0 4px 16px rgba(0,0,0,0.08)" : "0 1px 3px rgba(0,0,0,0.04)",
         animation: `fadeUp 0.4s ease ${delay}s both`,
       }}
     >
-      <span
-        style={{
-          position: "absolute",
-          left: 0,
-          top: "12px",
-          bottom: "12px",
-          width: "3px",
-          borderRadius: "0 2px 2px 0",
-          background: accentColor,
-          transformOrigin: "center",
-          transform: hovered ? "scaleY(1)" : "scaleY(0)",
-          transition: "transform 0.22s ease",
-        }}
-      />
+      <span style={{
+        position: "absolute", left: 0, top: "12px", bottom: "12px",
+        width: "3px", borderRadius: "0 2px 2px 0", background: accentColor,
+        transformOrigin: "center",
+        transform: hovered ? "scaleY(1)" : "scaleY(0)",
+        transition: "transform 0.22s ease",
+      }} />
       <span style={{ position: "relative", zIndex: 1 }}>{label}</span>
-      <span
-        style={{
-          position: "absolute",
-          right: "20px",
-          top: "50%",
-          transform: hovered
-            ? "translateY(-50%) translateX(3px)"
-            : "translateY(-50%) translateX(0)",
-          transition: "transform 0.22s ease",
-          color: hovered ? accentColor : "#9ca3af",
-          fontSize: "20px",
-          lineHeight: 1,
-        }}
-      >
-        ›
-      </span>
+      <span style={{
+        position: "absolute", right: "20px", top: "50%",
+        transform: hovered ? "translateY(-50%) translateX(3px)" : "translateY(-50%) translateX(0)",
+        transition: "transform 0.22s ease",
+        color: hovered ? accentColor : "#9ca3af",
+        fontSize: "20px", lineHeight: 1,
+      }}>›</span>
     </Link>
   );
 }
@@ -333,11 +342,7 @@ function Loader() {
     <div className="min-h-screen flex items-center justify-center bg-[#F7FAFC]">
       <div
         className="w-10 h-10 rounded-full"
-        style={{
-          border: "2px solid #e5e7eb",
-          borderTopColor: PRIMARY,
-          animation: "spin 0.8s linear infinite",
-        }}
+        style={{ border: "2px solid #e5e7eb", borderTopColor: PRIMARY, animation: "spin 0.8s linear infinite" }}
       />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

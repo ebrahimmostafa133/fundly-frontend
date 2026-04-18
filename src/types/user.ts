@@ -3,10 +3,15 @@ export interface User {
   email: string;
   first_name: string;
   last_name: string;
+  full_name?: string;
   phone: string;
   is_active: boolean;
-  created_at: string; 
-  profile_picture?: string | null; 
+  is_email_verified?: boolean;
+  created_at: string;
+  profile_picture?: string | null;
+  date_of_birth?: string | null;
+  country?: string;
+  bio?: string;
 }
 
 export interface UpdateProfilePayload {
