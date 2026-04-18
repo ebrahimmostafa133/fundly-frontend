@@ -5,6 +5,7 @@ export const projectsApi = {
     category?: string;
     tag?: string;
     search?: string;
+    owner?: number;
   }) => {
     return axiosInstance.get("/projects/", { params });
   },
