@@ -95,12 +95,20 @@ export default function CommentItem({
     >
       <div className="flex gap-3">
         {/* Avatar */}
-        <div
-          className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-          style={{ background: `linear-gradient(135deg, ${PRIMARY}, #38bdf8)` }}
-        >
-          {initials}
-        </div>
+        {author?.profile_picture ? (
+          <img
+            src={author.profile_picture}
+            alt={authorName}
+            className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+          />
+        ) : (
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+            style={{ background: `linear-gradient(135deg, ${PRIMARY}, #38bdf8)` }}
+          >
+            {initials}
+          </div>
+        )}
 
         <div className="flex-1 min-w-0">
           {/* Header */}
