@@ -1,44 +1,54 @@
 import axiosClient from "./axiosInstance";
 import type {
   User,
-  UpdateProfilePayload,
+  //UpdateProfilePayload,
   ChangePasswordPayload,
 } from "../types/user";
 
 const authApi = {
-  /**
-   * GET /auth/profile/
-   * Fetch authenticated user profile
-   */
+  /* ───── Get profile ───── */
   getProfile: async (): Promise<User> => {
     const response = await axiosClient.get<User>("/auth/profile/");
     return response.data;
   },
 
-  /**
-   * PATCH /auth/profile/
-   * Update user profile
-   */
-  updateProfile: async (
-    payload: UpdateProfilePayload
-  ): Promise<User> => {
+  /* ───── Update text profile only ───── */
+  updateProfile: async (payload: FormData): Promise<User> => {
+  const response = await axiosClient.patch<User>(
+    "/auth/profile/",
+    payload,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
+  return response.data;
+},
+
+  /* ───── Upload profile image ───── */
+  uploadProfileImage: async (file: File): Promise<User> => {
+    const formData = new FormData();
+    formData.append("profile_picture", file);
+
     const response = await axiosClient.patch<User>(
       "/auth/profile/",
-      payload
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
     );
+
     return response.data;
   },
 
-  /**
-   * DELETE /auth/profile/delete/
-   */
+  /* ───── Delete account ───── */
   deleteAccount: async (): Promise<void> => {
     await axiosClient.delete("/auth/profile/delete/");
   },
 
-  /**
-   * POST /auth/password/change/
-   */
+  /* ───── Change password ───── */
   changePassword: async (
     payload: ChangePasswordPayload
   ): Promise<{ detail: string }> => {
@@ -49,9 +59,7 @@ const authApi = {
     return response.data;
   },
 
-  /**
-   * POST /auth/logout/
-   */
+  /* ───── Logout ───── */
   logout: async (refreshToken: string): Promise<void> => {
     await axiosClient.post("/auth/logout/", {
       refresh: refreshToken,

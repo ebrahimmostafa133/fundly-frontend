@@ -5,7 +5,8 @@ export interface User {
   last_name: string;
   phone: string;
   is_active: boolean;
-  date_joined: string;
+  created_at: string; 
+  profile_picture?: string | null; 
 }
 
 export interface UpdateProfilePayload {
