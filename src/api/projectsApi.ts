@@ -44,4 +44,8 @@ export const projectsApi = {
   cancelProject: (id: number) => {
     return axiosInstance.post(`/projects/${id}/cancel/`);
   },
+
+  getSimilarProjects: (id: number) => {
+    return axiosInstance.get(`/projects/${id}/similar/`);
+  },
 };
