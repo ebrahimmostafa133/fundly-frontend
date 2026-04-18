@@ -1,14 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import donationsApi from "../../api/donationsApi";
+//import donationsApi from "../../api/donationsApi";
 import type { Donation } from "../../types/donation";
 
-/* ─── Theme ─── */
 const PRIMARY       = "#00A3FF";
 const PRIMARY_DARK  = "#0077B6";
 const PRIMARY_LIGHT = "#e6f7ff";
 
-/* ─── Per-card accent palettes ─── */
 const PALETTES = [
   { lid: "#0077B6", body: "#00A3FF", inside: "#e6f7ff", text: "#003f6b", seal: "#003f6b" },
   { lid: "#7c3aed", body: "#a78bfa", inside: "#f5f3ff", text: "#4c1d95", seal: "#5b21b6" },
@@ -18,10 +16,7 @@ const PALETTES = [
   { lid: "#1e40af", body: "#60a5fa", inside: "#eff6ff", text: "#1e3a8a", seal: "#1d4ed8" },
 ];
 
-/* ─── Injected CSS ─── */
 const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(14px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -50,17 +45,18 @@ const STYLES = `
     0%   { transform: scale(0); opacity: 0.5; }
     100% { transform: scale(28); opacity: 0; }
   }
+  @keyframes avatarPulse {
+    0%, 100% { transform: scale(1); }
+    50%       { transform: scale(1.06); }
+  }
 
   .donations-page * { box-sizing: border-box; }
 
-  /* ── Stat shimmer bar ── */
   .shimmer-bar {
-    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%);
     background-size: 200% 100%;
     animation: shimmerSlide 2s ease infinite;
   }
 
-  /* ══════ ENVELOPE CARD ══════ */
   .env-card {
     position: relative;
     height: 200px;
@@ -75,14 +71,12 @@ const STYLES = `
     box-shadow: 0 22px 52px rgba(0,0,0,0.14);
   }
 
-  /* base body */
   .env-body {
     position: absolute;
     inset: 0;
     border-radius: 18px;
   }
 
-  /* back side triangles (bottom-left / bottom-right) */
   .env-tri-bl {
     position: absolute;
     bottom: 0; left: 0;
@@ -98,7 +92,6 @@ const STYLES = `
     z-index: 2;
   }
 
-  /* lid flap */
   .env-lid {
     position: absolute;
     top: 0; left: 0; right: 0;
@@ -115,7 +108,6 @@ const STYLES = `
     transform: rotateX(-155deg);
   }
 
-  /* wax seal */
   .env-seal {
     position: absolute;
     top: 50%; left: 50%;
@@ -128,7 +120,6 @@ const STYLES = `
     transform: translate(-50%, -50%) scale(0) rotate(200deg);
   }
 
-  /* inner content panel */
   .env-inner {
     position: absolute;
     inset: 0;
@@ -146,9 +137,34 @@ const STYLES = `
     opacity: 1;
     transform: translateY(0);
   }
+
+  .filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: 1.5px solid #e5e7eb;
+    background: #fff;
+    color: #6b7280;
+    font-weight: 500;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+  .filter-btn.active {
+    border-color: ${PRIMARY};
+    background: ${PRIMARY_LIGHT};
+    color: ${PRIMARY_DARK};
+    font-weight: 700;
+  }
+  .filter-btn:hover:not(.active) {
+    border-color: #d1d5db;
+    background: #f9fafb;
+  }
 `;
 
-/* ─── Animated counter ─── */
+/* ── Animated counter ── */
 function useCountUp(target: number, ms = 1100, run = false) {
   const [v, setV] = useState(0);
   useEffect(() => {
@@ -166,11 +182,11 @@ function useCountUp(target: number, ms = 1100, run = false) {
 
 /* ═══════════════════════ PAGE ═══════════════════════ */
 export default function MyDonationsPage() {
-  const [donations, setDonations]     = useState<Donation[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [error, setError]             = useState<string | null>(null);
-  const [filter, setFilter]           = useState<"all" | "recent" | "top">("all");
-  const [statsReady, setStatsReady]   = useState(false);
+  const [donations, setDonations]   = useState<Donation[]>([]);
+  const [loading, setLoading]       = useState(true);
+  //const [error, setError]           = useState<string | null>(null);
+  const [filter, setFilter]         = useState<"all" | "recent" | "top">("all");
+  const [statsReady, setStatsReady] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
 
   /* inject styles */
@@ -184,7 +200,7 @@ export default function MyDonationsPage() {
     return () => document.getElementById(id)?.remove();
   }, []);
 
-  /* observe stats row */
+  /* observe stats row for count-up trigger */
   useEffect(() => {
     const el = statsRef.current;
     if (!el) return;
@@ -195,71 +211,195 @@ export default function MyDonationsPage() {
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
+//-----------------------
+  /* ── FIXED FETCH ── */
+  /*useEffect(() => {
+    donationsApi
+      .getMyDonations()
+      .then((r) => {
+        // Handle both paginated { results: [] } and plain array responses
+        const data: Donation[] = Array.isArray(r)
+          ? r
+          : Array.isArray(r?.results)
+          ? r.results
+          : [];
+        setDonations(data);
+      })
+      .catch((err: unknown) => {
+        const status = (err as { response?: { status?: number } })?.response?.status;
+        if (status === 401 || status === 403) {
+          setError("You need to be logged in to view your donations.");
+        } else {
+          setError("Couldn't load your donations. Please try again!");
+        }
+      })
+      .finally(() => setLoading(false));
+  }, []);*/
 
-  /* fetch */
+  /* ── DUMMY DATA — delete this block and uncomment real fetch when backend is ready ── */
   useEffect(() => {
-  donationsApi.getMyDonations()
-    .then(r => {
-      console.log("API RESPONSE:", r);
-      setDonations(r.results);
-    })
-    .catch(() => setError("Couldn't load your donations. Please try again!"))
-    .finally(() => setLoading(false));
-}, []);
+    const DUMMY: Donation[] = [
+      {
+        id: 1,
+        amount: "5000",
+        created_at: "2024-11-15T10:30:00Z",
+        project: { id: 101, title: "Clean Water for Rural Egypt" },
+      },
+      {
+        id: 2,
+        amount: "1200",
+        created_at: "2024-12-03T14:22:00Z",
+        project: { id: 102, title: "Solar Panels for Schools" },
+      },
+      {
+        id: 3,
+        amount: "750",
+        created_at: "2025-01-08T09:11:00Z",
+        project: { id: 103, title: "Food Bank Support Initiative" },
+      },
+      {
+        id: 4,
+        amount: "300",
+        created_at: "2025-02-20T16:45:00Z",
+        project: { id: 104, title: "Books for Every Child" },
+      },
+      {
+        id: 5,
+        amount: "2500",
+        created_at: "2025-03-01T08:00:00Z",
+        project: { id: 105, title: "Medical Aid for Sinai Villages" },
+      },
+      {
+        id: 6,
+        amount: "450",
+        created_at: "2025-03-18T11:30:00Z",
+        project: { id: 106, title: "Women Empowerment Fund" },
+      },
+    ];
 
-  const total = (donations ?? []).reduce(
-  (s, d) => s + parseFloat(d.amount || "0"),
-  0
-);
-  const projectCount = new Set((donations ?? []).map(d => d.project?.id)).size;
+    setTimeout(() => {
+      setDonations(DUMMY);
+      setLoading(false);
+    }, 800);
+
+  // ── REAL FETCH — uncomment when backend is ready ──
+  // donationsApi
+  //   .getMyDonations()
+  //   .then((r) => {
+  //     const data: Donation[] = Array.isArray(r)
+  //       ? r
+  //       : Array.isArray(r?.results)
+  //       ? r.results
+  //       : [];
+  //     setDonations(data);
+  //   })
+  //   .catch((err: unknown) => {
+  //     const status = (err as { response?: { status?: number } })?.response?.status;
+  //     if (status === 401 || status === 403) {
+  //       setError("You need to be logged in to view your donations.");
+  //     } else {
+  //       setError("Couldn't load your donations. Please try again!");
+  //     }
+  //   })
+  //   .finally(() => setLoading(false));
+  }, []);
+//---------------
+  const total = donations.reduce((s, d) => s + parseFloat(d.amount || "0"), 0);
+  const projectCount = new Set(donations.map((d) => d.project?.id)).size;
 
   const sorted = [...donations].sort((a, b) => {
-    if (filter === "recent") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    if (filter === "top")    return parseFloat(b.amount) - parseFloat(a.amount);
+    if (filter === "recent")
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    if (filter === "top")
+      return parseFloat(b.amount) - parseFloat(a.amount);
     return 0;
   });
 
   if (loading) return <Loader />;
-  if (error)   return <ErrState msg={error} />;
+  //if (error)   return <ErrState msg={error} />;
 
   return (
     <div
       className="donations-page min-h-screen px-4 py-10"
-      style={{ background: "#F7FAFC", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+      style={{ background: "#F7FAFC" }}
     >
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
 
-        {/* breadcrumb */}
+        {/* back link */}
         <div style={{ animation: "fadeUp 0.25s ease both" }}>
           <Link
             to="/profile"
-            style={{ display: "inline-flex", alignItems: "center", gap: 4, color: PRIMARY, fontWeight: 600, fontSize: 14, textDecoration: "none", marginBottom: 20 }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              color: PRIMARY,
+              fontWeight: 600,
+              fontSize: 13,
+              textDecoration: "none",
+              marginBottom: 20,
+              transition: "gap 0.18s ease",
+            }}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.gap = "10px")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.gap = "6px")}
           >
-            <span style={{ fontSize: 20 }}>‹</span> Back to Profile
+            <span style={{ fontSize: 16, display: "inline-block", transition: "transform 0.18s" }}>←</span>
+            Back to Profile
           </Link>
         </div>
 
-        {/* ─── Hero ─── */}
-        <HeroBanner />
+        {/* hero */}
+        <HeroBanner donationCount={donations.length} total={total} />
 
-        {/* ─── Stats ─── */}
+        {/* stats */}
         <div
           ref={statsRef}
-          style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, marginBottom: 28, animation: "fadeUp 0.38s ease 0.08s both" }}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 14,
+            marginBottom: 28,
+            animation: "fadeUp 0.38s ease 0.08s both",
+          }}
         >
-          <StatCard emoji="💸" label="Total Donated"     num={Math.round(total)} prefix="EGP " color="#00A3FF" run={statsReady} />
-          <StatCard emoji="📬" label="Donations Made"    num={donations.length}  color="#7c3aed"  run={statsReady} />
-          <StatCard emoji="🌱" label="Projects Backed"   num={projectCount}      color="#059669"  run={statsReady} />
+          <StatCard
+            emoji="💸"
+            label="Total Donated"
+            num={Math.round(total)}
+            prefix="EGP "
+            color="#00A3FF"
+            run={statsReady}
+          />
+          <StatCard
+            emoji="📬"
+            label="Donations Made"
+            num={donations.length}
+            color="#7c3aed"
+            run={statsReady}
+          />
+          <StatCard
+            emoji="🌱"
+            label="Projects Backed"
+            num={projectCount}
+            color="#059669"
+            run={statsReady}
+          />
         </div>
 
-        {/* ─── Filter ─── */}
+        {/* filter */}
         <FilterRow active={filter} set={setFilter} />
 
-        {/* ─── Cards ─── */}
+        {/* cards grid */}
         {sorted.length === 0 ? (
           <EmptyState />
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 18 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+              gap: 18,
+            }}
+          >
             {sorted.map((d, i) => (
               <EnvelopeCard
                 key={d.id}
@@ -271,15 +411,15 @@ export default function MyDonationsPage() {
           </div>
         )}
 
-        {/* ─── Footer ─── */}
+        {/* footer */}
         {sorted.length > 0 && <Thanks count={donations.length} />}
       </div>
     </div>
   );
 }
 
-/* ─── Hero ─── */
-function HeroBanner() {
+/* ════════════════════ HERO ════════════════════ */
+function HeroBanner({ donationCount, total }: { donationCount: number; total: number }) {
   return (
     <div
       style={{
@@ -296,12 +436,23 @@ function HeroBanner() {
       }}
     >
       {/* decorative bubbles */}
-      {[{ s: 140, x: -36, y: -36 }, { s: 70, x: "72%", y: -18 }, { s: 50, x: "88%", y: "55%" }].map((b, i) => (
-        <div key={i} style={{
-          position: "absolute", borderRadius: "50%",
-          width: b.s, height: b.s, left: b.x, top: b.y,
-          background: "#fff", opacity: 0.08, pointerEvents: "none",
-        }} />
+      {[
+        { s: 140, x: -36, y: -36 },
+        { s: 70,  x: "72%", y: -18 },
+        { s: 50,  x: "88%", y: "55%" },
+      ].map((b, i) => (
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            borderRadius: "50%",
+            width: b.s, height: b.s,
+            left: b.x, top: b.y,
+            background: "#fff",
+            opacity: 0.08,
+            pointerEvents: "none",
+          }}
+        />
       ))}
 
       <div style={{ position: "relative", zIndex: 1 }}>
@@ -311,36 +462,72 @@ function HeroBanner() {
         <h1 style={{ color: "#fff", fontSize: 28, fontWeight: 800, margin: "0 0 6px", lineHeight: 1.1 }}>
           My Donations
         </h1>
-        <p style={{ color: "rgba(255,255,255,0.8)", fontSize: 13, margin: 0 }}>
-          Every contribution counts — thank you! 💙
-        </p>
+        {donationCount > 0 ? (
+          <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 13, margin: 0, fontWeight: 500 }}>
+            {donationCount} {donationCount === 1 ? "donation" : "donations"} · EGP {Math.round(total).toLocaleString()} total 💙
+          </p>
+        ) : (
+          <p style={{ color: "rgba(255,255,255,0.8)", fontSize: 13, margin: 0 }}>
+            Every contribution counts — thank you! 💙
+          </p>
+        )}
       </div>
 
-      <div style={{ fontSize: 56, lineHeight: 1, animation: "floatBob 3s ease-in-out infinite", position: "relative", zIndex: 1 }}>
+      <div
+        style={{
+          fontSize: 56,
+          lineHeight: 1,
+          animation: "floatBob 3s ease-in-out infinite",
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
         💌
       </div>
     </div>
   );
 }
 
-/* ─── Stat card ─── */
-function StatCard({ emoji, label, num, prefix = "", color, run }: {
-  emoji: string; label: string; num: number; prefix?: string; color: string; run: boolean;
+/* ════════════════════ STAT CARD ════════════════════ */
+function StatCard({
+  emoji,
+  label,
+  num,
+  prefix = "",
+  color,
+  run,
+}: {
+  emoji: string;
+  label: string;
+  num: number;
+  prefix?: string;
+  color: string;
+  run: boolean;
 }) {
   const count = useCountUp(num, 1100, run);
   return (
-    <div style={{
-      background: "#fff", borderRadius: 16, padding: "16px 14px",
-      border: `1.5px solid ${color}28`,
-      boxShadow: `0 4px 20px ${color}14`,
-      position: "relative", overflow: "hidden",
-    }}>
-      {/* shimmer top line */}
-      <div className="shimmer-bar" style={{
-        position: "absolute", top: 0, left: 0, right: 0, height: 3,
-        background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
-        backgroundSize: "200% 100%",
-      }} />
+    <div
+      style={{
+        background: "#fff",
+        borderRadius: 16,
+        padding: "16px 14px",
+        border: `1.5px solid ${color}28`,
+        boxShadow: `0 4px 20px ${color}14`,
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* shimmer top bar */}
+      <div
+        className="shimmer-bar"
+        style={{
+          position: "absolute",
+          top: 0, left: 0, right: 0,
+          height: 3,
+          background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
+          backgroundSize: "200% 100%",
+        }}
+      />
       <div style={{ fontSize: 22, marginBottom: 6 }}>{emoji}</div>
       <div style={{ fontSize: 20, fontWeight: 800, color, lineHeight: 1, marginBottom: 3 }}>
         {prefix}{count.toLocaleString()}
@@ -350,9 +537,16 @@ function StatCard({ emoji, label, num, prefix = "", color, run }: {
   );
 }
 
-/* ─── Filter row ─── */
+/* ════════════════════ FILTER ROW ════════════════════ */
 type FilterKey = "all" | "recent" | "top";
-function FilterRow({ active, set }: { active: FilterKey; set: (k: FilterKey) => void }) {
+
+function FilterRow({
+  active,
+  set,
+}: {
+  active: FilterKey;
+  set: (k: FilterKey) => void;
+}) {
   const tabs: { k: FilterKey; label: string; icon: string }[] = [
     { k: "all",    label: "All",         icon: "📋" },
     { k: "recent", label: "Most Recent", icon: "🕐" },
@@ -360,39 +554,43 @@ function FilterRow({ active, set }: { active: FilterKey; set: (k: FilterKey) => 
   ];
   return (
     <div style={{ display: "flex", gap: 8, marginBottom: 22, animation: "fadeUp 0.4s ease 0.18s both" }}>
-      {tabs.map(t => (
+      {tabs.map((t) => (
         <button
           key={t.k}
           onClick={() => set(t.k)}
-          style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "8px 16px", borderRadius: 10,
-            border: `1.5px solid ${active === t.k ? PRIMARY : "#e5e7eb"}`,
-            background: active === t.k ? PRIMARY_LIGHT : "#fff",
-            color: active === t.k ? PRIMARY_DARK : "#6b7280",
-            fontWeight: active === t.k ? 700 : 500,
-            fontSize: 13, cursor: "pointer",
-            transition: "all 0.18s ease",
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-          }}
+          className={`filter-btn${active === t.k ? " active" : ""}`}
         >
-          <span>{t.icon}</span>{t.label}
+          <span>{t.icon}</span>
+          {t.label}
         </button>
       ))}
     </div>
   );
 }
 
-/* ─── Envelope card ─── */
-function EnvelopeCard({ donation, index, palette }: {
-  donation: Donation; index: number; palette: typeof PALETTES[0];
+/* ════════════════════ ENVELOPE CARD ════════════════════ */
+function EnvelopeCard({
+  donation,
+  index,
+  palette,
+}: {
+  donation: Donation;
+  index: number;
+  palette: (typeof PALETTES)[0];
 }) {
   const ref      = useRef<HTMLDivElement>(null);
-  const amount   = parseFloat(donation.amount);
+  const amount   = parseFloat(donation.amount || "0");
   const title    = donation.project?.title ?? "Unknown Project";
-  const initials = title.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
-  const date     = new Date(donation.created_at).toLocaleDateString("en-US", {
-    day: "2-digit", month: "short", year: "numeric",
+  const initials = title
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0] ?? "")
+    .join("")
+    .toUpperCase();
+  const date = new Date(donation.created_at).toLocaleDateString("en-US", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   });
 
   function spawnParticles() {
@@ -423,56 +621,65 @@ function EnvelopeCard({ donation, index, palette }: {
       style={{ animation: `fadeUp 0.4s ease ${0.06 + index * 0.08}s both` }}
       onMouseEnter={spawnParticles}
     >
-      {/* body colour */}
       <div className="env-body" style={{ background: palette.body }} />
-
-      {/* back side triangles */}
       <div className="env-tri-bl" style={{ background: palette.lid, opacity: 0.65 }} />
-      <div className="env-tri-br" style={{ background: palette.lid, opacity: 0.8  }} />
-
-      {/* lid flap */}
-      <div className="env-lid" style={{ background: palette.lid }} />
+      <div className="env-tri-br" style={{ background: palette.lid, opacity: 0.8 }} />
+      <div className="env-lid"    style={{ background: palette.lid }} />
 
       {/* wax seal */}
       <div className="env-seal">
-        <div style={{
-          width: 46, height: 46,
-          background: palette.seal,
-          borderRadius: "50%",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          border: `3px solid ${palette.lid}`,
-          clipPath: "polygon(50% 0%,80% 10%,100% 35%,100% 70%,80% 90%,50% 100%,20% 90%,0% 70%,0% 35%,20% 10%)",
-          color: "#fff", fontSize: 12, fontWeight: 800, letterSpacing: "0.5px",
-          animation: "floatBob 2.6s ease-in-out infinite",
-        }}>
+        <div
+          style={{
+            width: 46, height: 46,
+            background: palette.seal,
+            borderRadius: "50%",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: `3px solid ${palette.lid}`,
+            clipPath: "polygon(50% 0%,80% 10%,100% 35%,100% 70%,80% 90%,50% 100%,20% 90%,0% 70%,0% 35%,20% 10%)",
+            color: "#fff", fontSize: 12, fontWeight: 800, letterSpacing: "0.5px",
+            animation: "floatBob 2.6s ease-in-out infinite",
+          }}
+        >
           {initials}
         </div>
       </div>
 
-      {/* inner reveal */}
+      {/* inner reveal on hover */}
       <div className="env-inner" style={{ background: palette.inside }}>
-        {/* project row */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-            background: palette.body,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: "#fff", fontWeight: 800, fontSize: 12,
-          }}>
+          <div
+            style={{
+              width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+              background: palette.body,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#fff", fontWeight: 800, fontSize: 12,
+            }}
+          >
             {initials}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: palette.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <p
+              style={{
+                margin: 0, fontSize: 13, fontWeight: 700,
+                color: palette.text,
+                whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+              }}
+            >
               {title}
             </p>
             <p style={{ margin: 0, fontSize: 11, color: palette.text, opacity: 0.55 }}>{date}</p>
           </div>
         </div>
 
-        {/* amount + CTA row */}
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
           <div>
-            <p style={{ margin: "0 0 1px", fontSize: 10, color: palette.text, opacity: 0.5, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>
+            <p
+              style={{
+                margin: "0 0 1px", fontSize: 10,
+                color: palette.text, opacity: 0.5,
+                fontWeight: 600, letterSpacing: 1, textTransform: "uppercase",
+              }}
+            >
               Donated
             </p>
             <p style={{ margin: 0, fontSize: 24, fontWeight: 800, color: palette.text, lineHeight: 1 }}>
@@ -482,7 +689,7 @@ function EnvelopeCard({ donation, index, palette }: {
 
           <Link
             to={`/projects/${donation.project?.id}`}
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
             style={{
               padding: "7px 13px", borderRadius: 10,
               background: palette.body, color: "#fff",
@@ -491,14 +698,13 @@ function EnvelopeCard({ donation, index, palette }: {
               transition: "opacity 0.18s",
               flexShrink: 0,
             }}
-            onMouseEnter={e => (e.currentTarget.style.opacity = "0.82")}
-            onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.opacity = "0.82")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.opacity = "1")}
           >
             View →
           </Link>
         </div>
 
-        {/* tier badge */}
         <div style={{ marginTop: 10 }}>
           <TierBadge amount={amount} />
         </div>
@@ -507,7 +713,7 @@ function EnvelopeCard({ donation, index, palette }: {
   );
 }
 
-/* ─── Tier badge ─── */
+/* ════════════════════ TIER BADGE ════════════════════ */
 function TierBadge({ amount }: { amount: number }) {
   const t =
     amount >= 5000 ? { label: "🏆 Champion Donor",  bg: "#fef9c3", fg: "#854d0e" } :
@@ -515,30 +721,39 @@ function TierBadge({ amount }: { amount: number }) {
     amount >= 500  ? { label: "💙 Valued Backer",    bg: "#eff6ff", fg: "#1e40af" } :
                      { label: "🌱 Kind Contributor", bg: "#f0fdf4", fg: "#166534" };
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 4,
-      padding: "3px 10px", borderRadius: 100,
-      background: t.bg, color: t.fg,
-      fontSize: 10, fontWeight: 700,
-    }}>
+    <span
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 4,
+        padding: "3px 10px", borderRadius: 100,
+        background: t.bg, color: t.fg,
+        fontSize: 10, fontWeight: 700,
+      }}
+    >
       {t.label}
     </span>
   );
 }
 
-/* ─── Empty ─── */
+/* ════════════════════ EMPTY STATE ════════════════════ */
 function EmptyState() {
   const [hov, setHov] = useState(false);
   return (
-    <div style={{
-      display: "flex", flexDirection: "column", alignItems: "center",
-      justifyContent: "center", padding: "60px 24px", textAlign: "center",
-      background: "#fff", borderRadius: 20,
-      border: "1.5px dashed #d1d5db",
-      animation: "fadeUp 0.4s ease both",
-    }}>
-      <div style={{ fontSize: 64, marginBottom: 16, animation: "floatBob 3s ease-in-out infinite" }}>💌</div>
-      <h3 style={{ fontSize: 20, fontWeight: 800, color: "#1f2937", margin: "0 0 8px" }}>No donations yet</h3>
+    <div
+      style={{
+        display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+        padding: "60px 24px", textAlign: "center",
+        background: "#fff", borderRadius: 20,
+        border: "1.5px dashed #d1d5db",
+        animation: "fadeUp 0.4s ease both",
+      }}
+    >
+      <div style={{ fontSize: 64, marginBottom: 16, animation: "floatBob 3s ease-in-out infinite" }}>
+        💌
+      </div>
+      <h3 style={{ fontSize: 20, fontWeight: 800, color: "#1f2937", margin: "0 0 8px" }}>
+        No donations yet
+      </h3>
       <p style={{ fontSize: 14, color: "#9ca3af", maxWidth: 280, margin: "0 0 24px" }}>
         Your first envelope is waiting to be sent! Find a project you love and make an impact.
       </p>
@@ -562,20 +777,22 @@ function EmptyState() {
   );
 }
 
-/* ─── Gratitude footer ─── */
+/* ════════════════════ THANKS FOOTER ════════════════════ */
 function Thanks({ count }: { count: number }) {
   const msgs = [
-    "You've brightened someone's day 🌟",
     "The world is better because of people like you 💙",
+    "You've brightened someone's day ",
     "Change starts with one donation — and you've made many ✨",
   ];
   return (
-    <div style={{
-      marginTop: 36, borderRadius: 20, padding: "22px 24px", textAlign: "center",
-      background: `linear-gradient(135deg, ${PRIMARY_LIGHT} 0%, #f0fdf4 100%)`,
-      border: `1.5px solid ${PRIMARY}30`,
-      animation: "fadeUp 0.5s ease 0.25s both",
-    }}>
+    <div
+      style={{
+        marginTop: 36, borderRadius: 20, padding: "22px 24px", textAlign: "center",
+        background: `linear-gradient(135deg, ${PRIMARY_LIGHT} 0%, #f0fdf4 100%)`,
+        border: `1.5px solid ${PRIMARY}30`,
+        animation: "fadeUp 0.5s ease 0.25s both",
+      }}
+    >
       <div style={{ fontSize: 28, marginBottom: 8, animation: "starPop 0.6s ease 0.5s both" }}>🎉</div>
       <p style={{ fontWeight: 700, color: "#374151", fontSize: 14, margin: "0 0 4px" }}>
         {msgs[count % msgs.length]}
@@ -587,22 +804,67 @@ function Thanks({ count }: { count: number }) {
   );
 }
 
-/* ─── Loader / Error ─── */
+/* ════════════════════ LOADER ════════════════════ */
 function Loader() {
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#F7FAFC" }}>
-      <div style={{ width: 40, height: 40, borderRadius: "50%", border: "3px solid #e5e7eb", borderTopColor: PRIMARY, animation: "spin 0.8s linear infinite" }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    <div
+      style={{
+        minHeight: "100vh", display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+        gap: 16, background: "#F7FAFC",
+      }}
+    >
+      <div
+        style={{
+          width: 40, height: 40, borderRadius: "50%",
+          border: "3px solid #e5e7eb",
+          borderTopColor: PRIMARY,
+          animation: "spin 0.8s linear infinite",
+        }}
+      />
+      <p style={{ fontSize: 13, fontWeight: 600, color: "#9ca3af", margin: 0 }}>
+        Loading your donations…
+      </p>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
-function ErrState({ msg }: { msg: string }) {
+
+/* ════════════════════ ERROR STATE ════════════════════ */
+/*function ErrState({ msg }: { msg: string }) {
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#F7FAFC" }}>
-      <div style={{ color: "#dc2626", background: "#fef2f2", border: "1px solid #fca5a5", padding: "20px 28px", borderRadius: 16, fontSize: 14, textAlign: "center", maxWidth: 320 }}>
-        <div style={{ fontSize: 32, marginBottom: 8 }}>😕</div>
-        {msg}
+    <div
+      style={{
+        minHeight: "100vh", display: "flex",
+        alignItems: "center", justifyContent: "center",
+        background: "#F7FAFC",
+      }}
+    >
+      <div
+        style={{
+          color: "#dc2626", background: "#fef2f2",
+          border: "1px solid #fca5a5",
+          padding: "28px 32px", borderRadius: 16,
+          fontSize: 14, textAlign: "center", maxWidth: 340,
+        }}
+      >
+        <div style={{ fontSize: 36, marginBottom: 12 }}>😕</div>
+        <p style={{ fontWeight: 700, color: "#b91c1c", margin: "0 0 8px" }}>Something went wrong</p>
+        <p style={{ color: "#6b7280", margin: "0 0 20px", lineHeight: 1.6 }}>{msg}</p>
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            padding: "10px 24px", borderRadius: 10, border: "none",
+            background: PRIMARY, color: "#fff",
+            fontWeight: 700, fontSize: 14, cursor: "pointer",
+          }}
+        >
+          Try again
+        </button>
       </div>
     </div>
   );
 }
+*/
+
+Thanks
