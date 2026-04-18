@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 import { projectsApi } from "../../api/projectsApi";
 import commentsApi from "../../api/commentsApi";
 import ratingsApi from "../../api/ratingsApi";
 import donationsApi from "../../api/donationsApi";
+import { useProfile } from "../../hooks/useProfile";
 import type { Project } from "../../types/project.types";
 import type { Comment } from "../../types/comment.types";
 
@@ -24,6 +25,8 @@ import {
 
 export default function ProjectDetailsPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user: currentUser } = useProfile();
   const projectId = Number(id);
 
   const [project, setProject] = useState<Project | null>(null);
@@ -102,6 +105,8 @@ export default function ProjectDetailsPage() {
     ? Math.round((totalFunded / project.target) * 100)
     : 0;
 
+  const isOwner = currentUser?.id === project.owner?.id;
+
   return (
     <div className="min-h-screen bg-[#F7FAFC]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
@@ -155,6 +160,20 @@ export default function ProjectDetailsPage() {
                 style={{ animationDelay: "0.15s" }}
               >
                 <ReportProjectSection projectId={projectId} />
+              </div>
+            )}
+
+            {isOwner && (
+              <div
+                className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-fadeUp"
+                style={{ animationDelay: "0.2s" }}
+              >
+                <button
+                  onClick={() => navigate(`/projects/${projectId}/edit`)}
+                  className="w-full px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
+                >
+                  Edit Project
+                </button>
               </div>
             )}
           </div>
