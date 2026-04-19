@@ -49,15 +49,23 @@ export default function ProfilePage() {
     donationsApi
       .getMyDonations()
       .then((r) => {
-        const donations = r.results ?? [];
-        const total     = donations.reduce((s, d) => s + parseFloat(d.amount || "0"), 0);
-        const causes    = new Set(donations.map((d) => d.project?.id)).size;
+        // Robust extraction of donations array (handles direct array or paginated object)
+        const donations: any[] = Array.isArray(r) 
+          ? r 
+          : (r && typeof r === 'object' && 'results' in r && Array.isArray(r.results))
+          ? (r.results as any[])
+          : [];
+          
+        const total = donations.reduce((s, d) => s + parseFloat(d.amount || "0"), 0);
+        const causes = new Set(donations.map((d) => d.project?.id)).size;
+        
         setTotalDonated(Math.round(total));
         setDonationCount(donations.length);
         setCauseCount(causes);
       })
-      .catch(() => {
-        /* silently fail — stats just stay 0 */
+      .catch((err) => {
+        console.error("STATS FETCH ERROR:", err);
+        /* stats stay 0 on error */
       })
       .finally(() => setStatsLoading(false));
   }, []);
