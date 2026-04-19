@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TbStarFilled, TbStar } from "react-icons/tb";
 import ratingsApi from "../../../api/ratingsApi";
 
@@ -11,7 +11,26 @@ export default function RateSection({ projectId, onRated }: Props) {
   const [hover, setHover] = useState(0);
   const [selected, setSelected] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    fetchUserRating();
+  }, [projectId]);
+
+  async function fetchUserRating() {
+    try {
+      setLoading(true);
+      const data = await ratingsApi.getUserRating(projectId);
+      if (data.value) {
+        setSelected(data.value);
+      }
+    } catch (error) {
+      console.error("Failed to fetch user rating:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleRate(value: number) {
     setSelected(value);
@@ -19,11 +38,18 @@ export default function RateSection({ projectId, onRated }: Props) {
     setMsg(null);
 
     try {
-      await ratingsApi.createRating(projectId, value);
-      setMsg({ type: "success", text: "Rating submitted!" });
+      if (selected > 0) {
+        // User already has a rating, update it
+        await ratingsApi.updateRating(projectId, value);
+        setMsg({ type: "success", text: "Rating updated!" });
+      } else {
+        // Create new rating
+        await ratingsApi.createRating(projectId, value);
+        setMsg({ type: "success", text: "Rating submitted!" });
+      }
       onRated();
     } catch (error: any) {
-      let errorText = "Could not submit rating. You may have already rated this project.";
+      let errorText = "Could not submit rating.";
       if (error.response?.data) {
         const data = error.response.data;
         if (typeof data === 'string') {
@@ -42,11 +68,15 @@ export default function RateSection({ projectId, onRated }: Props) {
     }
   }
 
+  if (loading) {
+    return <div className="text-sm text-gray-500">Loading...</div>;
+  }
+
   return (
     <div>
       <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
         <TbStarFilled size={16} className="text-warning-500" />
-        Rate this Project
+        {selected > 0 ? "Update Rating" : "Rate this Project"}
       </h3>
 
       {/* Star buttons */}
@@ -74,6 +104,12 @@ export default function RateSection({ projectId, onRated }: Props) {
           </span>
         )}
       </div>
+
+      {selected > 0 && (
+        <p className="text-xs text-gray-500 mb-2">
+          Your rating: {selected}/5 {hover > 0 && hover !== selected && `→ Change to ${hover}/5`}
+        </p>
+      )}
 
       {/* Feedback */}
       {msg && (

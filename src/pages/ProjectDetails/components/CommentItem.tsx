@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { TbSend, TbCornerDownRight, TbFlag } from "react-icons/tb";
+import { TbSend, TbCornerDownRight, TbFlag, TbTrash } from "react-icons/tb";
 import commentsApi from "../../../api/commentsApi";
+import { useProfile } from "../../../hooks/useProfile";
+import ConfirmModal from "../../../components/shared/ConfirmModal";
 import ReportCommentModal from "./ReportCommentModal";
 import { formatTimeAgo } from "../utils/helpers";
 import { PRIMARY } from "../utils/constants";
@@ -21,10 +23,13 @@ export default function CommentItem({
   delay = 0,
   isReply = false,
 }: Props) {
+  const { user: currentUser } = useProfile();
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [replying, setReplying] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const author = comment.user;
@@ -33,6 +38,7 @@ export default function CommentItem({
   const authorName =
     `${author?.first_name ?? ""} ${author?.last_name ?? ""}`.trim() || "Anonymous";
   const timeAgo = formatTimeAgo(comment.created_at);
+  const isOwner = currentUser?.id === comment.user?.id;
 
   /* Focus input when opened */
   useEffect(() => {
@@ -55,6 +61,26 @@ export default function CommentItem({
     }
   }
 
+  async function handleDeleteConfirm() {
+    if (!isOwner) return;
+
+    setDeleting(true);
+    try {
+      await commentsApi.deleteComment(comment.id);
+      setShowDeleteConfirm(false);
+      onRefresh();
+    } catch (error) {
+      console.error("Failed to delete comment:", error);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  function handleDeleteClick() {
+    if (!isOwner) return;
+    setShowDeleteConfirm(true);
+  }
+
   function handleReplyKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -69,12 +95,20 @@ export default function CommentItem({
     >
       <div className="flex gap-3">
         {/* Avatar */}
-        <div
-          className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-          style={{ background: `linear-gradient(135deg, ${PRIMARY}, #38bdf8)` }}
-        >
-          {initials}
-        </div>
+        {author?.profile_picture ? (
+          <img
+            src={author.profile_picture}
+            alt={authorName}
+            className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+          />
+        ) : (
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+            style={{ background: `linear-gradient(135deg, ${PRIMARY}, #38bdf8)` }}
+          >
+            {initials}
+          </div>
+        )}
 
         <div className="flex-1 min-w-0">
           {/* Header */}
@@ -107,6 +141,17 @@ export default function CommentItem({
                 <TbFlag size={13} />
                 Report
               </button>
+              {isOwner && (
+                <button
+                  onClick={handleDeleteClick}
+                  disabled={deleting}
+                  className="text-xs text-gray-400 hover:text-error-500 font-medium flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Delete this comment"
+                >
+                  <TbTrash size={13} />
+                  Delete
+                </button>
+              )}
             </div>
           )}
 
@@ -139,6 +184,19 @@ export default function CommentItem({
               onClose={() => setShowReportModal(false)}
             />
           )}
+
+          {/* Delete Confirmation Modal */}
+          <ConfirmModal
+            isOpen={showDeleteConfirm}
+            onClose={() => setShowDeleteConfirm(false)}
+            onConfirm={handleDeleteConfirm}
+            loading={deleting}
+            title="Delete Comment"
+            message="Are you sure you want to delete this comment? This action cannot be undone."
+            confirmText="Delete"
+            cancelText="Cancel"
+            isDanger
+          />
 
           {/* Nested Replies */}
           {comment.replies && comment.replies.length > 0 && (

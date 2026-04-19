@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { projectsApi } from '../../api/projectsApi'
 import ProjectCard from '../../components/shared/ProjectCard'
 import type { Project, Category } from '../../types/project.types'
 import { useProfile } from '../../hooks/useProfile'
 
 export default function ProjectsListPage() {
+  const [searchParams] = useSearchParams()
   const [projects, setProjects] = useState<Project[]>([])
   const [cats, setCats] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -14,6 +15,19 @@ export default function ProjectsListPage() {
   const [catFilter, setCatFilter] = useState('')
   const [showMineOnly, setShowMineOnly] = useState(false)
   const { user } = useProfile()
+
+  // Initialize filters from URL on mount
+  useEffect(() => {
+    const categoryParam = searchParams.get('category')
+    const searchParam = searchParams.get('search')
+
+    if (categoryParam) {
+      setCatFilter(categoryParam)
+    }
+    if (searchParam) {
+      setSearchText(searchParam)
+    }
+  }, [])
 
   useEffect(() => {
 
