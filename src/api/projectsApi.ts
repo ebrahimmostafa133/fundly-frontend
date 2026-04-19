@@ -49,4 +49,13 @@ export const projectsApi = {
   getSimilarProjects: (id: number) => {
     return axiosInstance.get(`/projects/${id}/similar/`);
   },
+
+  getProjectDonations: (projectId: number) => {
+    return axiosInstance.get(`/projects/${projectId}/donations/`);
+  },
+  
+  getProjectStats: (projectId: number) => {
+    return axiosInstance.get(`/projects/${projectId}/stats/`);
+  },
+
 };
