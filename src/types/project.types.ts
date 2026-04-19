@@ -1,3 +1,5 @@
+import type { User } from "./user";
+
 export interface Category {
   id: number;
   name: string;
@@ -37,7 +39,7 @@ export interface Project {
   start_time: string;
   end_time: string;
 
-  owner?: unknown;
+  owner?: Partial<User> | null;
 
   avg_rating: number;
   progress: number;
