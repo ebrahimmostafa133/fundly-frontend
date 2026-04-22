@@ -105,7 +105,9 @@ export default function HomePage() {
     navigate(`?${params.toString()}`, { replace: true });
   };
 
-  const displayProjects: ExtendedProject[] = isFiltering ? filteredProjects : (allProjects as ExtendedProject[]).slice(0, 6);
+  const displayProjects: ExtendedProject[] = isFiltering 
+    ? filteredProjects 
+    : (allProjects as ExtendedProject[]).filter(p => !p.is_featured).slice(0, 4);
   const selectedCategory = categories.find(c => c.id === selectedCategoryId);
 
   if (loading) return <PageLoader />;
@@ -145,13 +147,20 @@ export default function HomePage() {
       />
 
       {!isFiltering && featured.length > 0 && (
-        <ProjectsSection 
-          title="Featured Projects"
-          subtitle="Hand-picked by our team"
-          projects={featured as ExtendedProject[]}
-          icon="⭐"
-          featured
-        />
+        <div style={{
+          background: 'linear-gradient(180deg, transparent 0%, #f0f9ff 50%, transparent 100%)',
+          margin: '0 -20px 64px',
+          padding: '20px',
+          borderRadius: 40,
+        }}>
+          <ProjectsSection 
+            title="Featured Projects"
+            subtitle="Hand-picked by our team"
+            projects={featured as ExtendedProject[]}
+            icon="⭐"
+            featured
+          />
+        </div>
       )}
 
       <BrowseCategoriesSection 
@@ -351,7 +360,7 @@ function ProjectsSection({
   if (projects.length === 0) return null;
   
   return (
-    <section style={{ marginBottom: 64, animation: 'fadeUp .4s ease .18s both' }}>
+    <section style={{ marginBottom: featured ? 0 : 64, animation: 'fadeUp .4s ease .18s both' }}>
       <SectionHead emoji={icon} title={title} sub={subtitle} />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px,1fr))', gap: 20 }}>
         {projects.map((project: ExtendedProject, i: number) => (

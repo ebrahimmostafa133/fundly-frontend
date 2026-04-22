@@ -25,6 +25,15 @@ const authApi = {
     return data.user as User;
   },
 
+  /* ── Google Login ── */
+  googleLogin: async (token: string): Promise<User> => {
+    const { data } = await axiosInstance.post("/auth/google-login/", {
+      token,
+    });
+    saveTokens(data.tokens.access, data.tokens.refresh);
+    return data.user as User;
+  },
+
   /* ── Register ── */
   register: async (payload: {
     email: string;

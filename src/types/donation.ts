@@ -1,13 +1,9 @@
 export interface Donation {
   id: number;
-  project: {
-    id: number;
-    title: string;
-    image?: string;
-  };
+  project_title: string;
+  project_id: number;
   amount: string;
   created_at: string;
-  status?: "completed" | "pending" | "failed";
 }
 
 export interface DonationsResponse {
