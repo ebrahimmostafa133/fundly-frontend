@@ -168,7 +168,7 @@ export default function MyDonationsPage() {
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
+  }, [loading]);
 
   /* fetch from backend */
   useEffect(() => {
@@ -194,7 +194,7 @@ export default function MyDonationsPage() {
   }, []);
 
   const total        = donations.reduce((s, d) => s + parseFloat(d.amount || "0"), 0);
-  const projectCount = new Set(donations.map((d) => d.project?.id)).size;
+  const projectCount = new Set(donations.map((d) => d.project_id)).size;
 
   const sorted = [...donations].sort((a, b) => {
     if (filter === "recent")
@@ -355,7 +355,7 @@ function EnvelopeCard({ donation, index, palette }: {
 }) {
   const ref      = useRef<HTMLDivElement>(null);
   const amount   = parseFloat(donation.amount || "0");
-  const title    = donation.project?.title ?? "Unknown Project";
+  const title    = donation.project_title ?? "Unknown Project";
   const initials = title.split(" ").slice(0, 2).map((w) => w[0] ?? "").join("").toUpperCase();
   const date     = new Date(donation.created_at).toLocaleDateString("en-US", {
     day: "2-digit", month: "short", year: "numeric",
@@ -431,7 +431,7 @@ function EnvelopeCard({ donation, index, palette }: {
             </p>
           </div>
           <Link
-            to={`/projects/${donation.project?.id}`}
+            to={`/projects/${donation.project_id}`}
             onClick={(e) => e.stopPropagation()}
             style={{
               padding: "7px 13px", borderRadius: 10,

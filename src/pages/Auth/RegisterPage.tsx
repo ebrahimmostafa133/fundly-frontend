@@ -15,6 +15,8 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import axiosInstance from '../../api/axiosInstance';
+import { GoogleLogin } from '@react-oauth/google';
+import authApi from '../../api/authApi';
 
 // ─── Zod Schema ─────────────────────────────────────────────────────────────
 
@@ -149,6 +151,21 @@ export default function RegisterPage() {
       } else {
         setApiError('Registration failed. Please try again.');
       }
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setApiError(null);
+    try {
+      const user = await authApi.googleLogin(credentialResponse.credential);
+      localStorage.setItem('user', JSON.stringify(user));
+      navigate('/');
+    } catch (err: any) {
+      console.error("GOOGLE LOGIN ERROR:", err?.response?.data || err);
+      setApiError(
+        err?.response?.data?.error ||
+        "Google login failed. Please try again."
+      );
     }
   };
 
@@ -430,6 +447,28 @@ export default function RegisterPage() {
                 )}
                 {isSubmitting ? 'Creating account...' : 'Create Account'}
               </button>
+
+              {/* DIVIDER */}
+              <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-gray-500">Or continue with</span>
+                </div>
+              </div>
+
+              {/* GOOGLE LOGIN */}
+              <div className="flex justify-center">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => setApiError("Google login failed.")}
+                  useOneTap
+                  theme="outline"
+                  shape="pill"
+                  width="100%"
+                />
+              </div>
             </form>
           )}
 

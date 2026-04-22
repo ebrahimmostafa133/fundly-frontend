@@ -135,8 +135,13 @@ export function useHomeData() {
 
         setProjectsByCategory(projectsByCat);
         setCategoryTotals(catTotals);
+        // Set featured projects - prefer dedicated API, fallback to filtering main list
+        const featuredList = processedFeatured.length > 0 
+          ? processedFeatured 
+          : processedProjects.filter(p => p.is_featured);
+          
+        setFeatured(featuredList.slice(0, 4));
         setAllProjects(processedProjects);
-        setFeatured(processedFeatured.slice(0, 6));
         setCategories(categoriesList);
         
       } catch (err) {
