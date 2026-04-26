@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useHomeData } from './hooks/useHomeData';
-import { GooeySearch } from './components/GooeySearch';
 import { CategoryWallet } from './components/CategoryWallet';
 import { ProjectCard } from './components/ProjectCard';
 import { SectionHead } from './components/SectionHead';
@@ -196,45 +195,56 @@ function ErrorMessage({ message }: { message: string }) {
 
 function HeroSection({ search, setSearch, onSubmit }: { search: string; setSearch: (v: string) => void; onSubmit: (e: FormEvent<HTMLFormElement>) => void }) {
   return (
-    <section style={{ marginBottom: 64, animation: 'fadeUp .4s ease both' }}>
-      <div style={{ position: 'relative', marginBottom: 36 }}>
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '6px 14px', borderRadius: 100,
-            background: PL, border: `1.5px solid ${P}33`,
-            marginBottom: 16, fontSize: 12, fontWeight: 700,
-            color: PD, letterSpacing: '.5px',
-          }}>
-            <span style={{ animation: 'floatBob 2.5s ease-in-out infinite', fontSize: 14 }}>💙</span>
-            FUNDLY — CROWDFUNDING PLATFORM
-          </div>
-          <h1 style={{
-            fontSize: 'clamp(2rem,5vw,3.4rem)', fontWeight: 800,
-            color: '#111827', margin: '0 0 12px', lineHeight: 1.1,
-          }}>
-            Discover Projects,<br />
-            <span style={{
-              background: `linear-gradient(135deg, ${PD}, ${P}, #4FD1FF)`,
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            }}>
-              Fund Dreams.
-            </span>
-          </h1>
-          <p style={{ color: '#6b7280', fontSize: 16, margin: '0 0 32px', maxWidth: 480 }}>
-            Browse campaigns you believe in and help bring ideas to life — one donation at a time.
-          </p>
+    <section className="relative mb-20 animate-[fadeUp_0.4s_ease_both] rounded-3xl overflow-hidden bg-primary-700 text-white shadow-2xl">
+      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1531206715517-5c0ba140b4b8?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-primary-700 via-primary-700/90 to-transparent"></div>
+      
+      <div className="relative z-10 px-8 py-16 md:py-24 max-w-3xl">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-6 text-sm font-semibold tracking-wide uppercase text-primary-50">
+          <span className="text-xl">✨</span> Fund Your Future
+        </div>
+        
+        <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight tracking-tight">
+          Bring creative projects <br className="hidden md:block"/> to life.
+        </h1>
+        
+        <p className="text-lg md:text-xl text-primary-50 mb-10 max-w-2xl font-medium leading-relaxed">
+          Join thousands of people funding the next big idea. Whether it's a personal emergency, a community project, or a startup, Fundly helps you make it happen.
+        </p>
 
-          <form onSubmit={onSubmit} style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-            <GooeySearch value={search} onChange={setSearch} />
-            <button type="submit" style={{
-              padding: '14px 28px', borderRadius: 14,
-              background: P, border: 'none', color: '#fff',
-              fontWeight: 800, fontSize: 14, cursor: 'pointer',
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              whiteSpace: 'nowrap',
-            }}>Search →</button>
-          </form>
+        <form onSubmit={onSubmit} className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-2xl">
+          <div className="relative w-full flex-1">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <input 
+              type="text" 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search for projects, categories, or keywords..." 
+              className="w-full pl-11 pr-4 py-4 rounded-xl text-gray-900 bg-white shadow-lg border-2 border-transparent focus:border-primary-500 focus:ring-0 focus:outline-none transition-all font-medium text-[15px]"
+            />
+          </div>
+          <button type="submit" className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gray-900 text-white font-bold text-[15px] hover:bg-gray-800 hover:shadow-xl hover:-translate-y-0.5 transition-all whitespace-nowrap">
+            Search Projects
+          </button>
+        </form>
+        
+        <div className="mt-8 flex items-center gap-6 text-sm font-semibold text-primary-100">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-primary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+            Trust & Safety
+          </div>
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-primary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+            Secure Payments
+          </div>
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-primary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+            Global Community
+          </div>
         </div>
       </div>
     </section>

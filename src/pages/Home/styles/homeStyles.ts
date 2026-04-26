@@ -1,9 +1,9 @@
 /* ─── Theme ─── */
-export const P   = '#00A3FF';
-export const PD  = '#0077B6';
-export const PDD = '#003f6b';
-export const PL  = '#e6f7ff';
-export const PC  = '#4FD1FF';
+export const P   = '#10b981'; // primary 500
+export const PD  = '#059669'; // primary 600
+export const PDD = '#047857'; // primary 700
+export const PL  = '#ecfdf5'; // primary 50
+export const PC  = '#34d399'; // primary 400
 
 export const CARD_PALETTES = [
   { bg: PD,  text: '#fff', chip: 'rgba(255,255,255,0.2)',  label: 'rgba(255,255,255,0.65)' },

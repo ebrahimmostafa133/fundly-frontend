@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom';
 import { 
-  Rocket, 
   Mail, 
   Heart,
-  ChevronRight
+  ChevronRight,
+  HeartHandshake
 } from 'lucide-react';
 import { FaTwitter, FaGithub, FaLinkedinIn } from 'react-icons/fa';
 
@@ -45,7 +45,7 @@ export default function AppFooter() {
           <div className="flex flex-col gap-6">
             <Link to="/" className="flex items-center gap-2">
               <div className="bg-primary-500 p-2 rounded-xl text-white shadow-xl shadow-primary-500/30">
-                <Rocket size={20} />
+                <HeartHandshake size={20} />
               </div>
               <span className="text-xl font-black bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
                 Fundly
